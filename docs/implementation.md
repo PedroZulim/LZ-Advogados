@@ -17,12 +17,18 @@ O repositório continha somente SPEC, README, licença e arquivos de ambiente Py
 - Testes unitários e de políticas em PostgreSQL embarcado (PGlite), mais suíte pgTAP para Supabase real na CI.
 - Configuração local, seed de organizações sintéticas, CI, headers para Cloudflare Pages e documentação.
 
-### Próxima entrega: concluir fase 1
+### Administração de usuários — implementação de 16/09/2026
+
+Implementadas a Edge Function `admin-users`, a migration de administração e auditoria e as rotas `/admin/users`, `/admin/audit` e `/account/sessions`. Incluem convites, alteração de papel, desativação/reativação, revogação, proteção transacional do último admin, limites por usuário e auditoria. O backend revalida a identidade no Auth e as permissões no banco. A revogação foi testada com refresh tokens reais e a concorrência entre administradores foi testada via HTTP. Instruções de implantação e aceite estão em [user-administration.md](user-administration.md).
+
+Validação desta etapa: 51 testes unitários/PostgreSQL embarcado, 27 testes pgTAP e integração local da Edge Function com GoTrue e MFA real. O deploy remoto e o aceite no navegador hospedado ainda não foram realizados nesta entrega. As observações de ausência de Docker abaixo descrevem apenas a validação inicial, anterior a esta etapa.
+
+### Próximos passos para concluir fase 1
 
 1. Executar Supabase local/CI e validar GoTrue, links de convite, senha e TOTP de ponta a ponta.
-2. Implementar Edge Functions autenticadas para convite, alteração de função, desativação e revogação, com validação server-side de admin + AAL2 + tenant, rate limiting e auditoria. Não criar endpoint privilegiado provisório.
-3. Interface administrativa de usuários e gestão de sessões. Proteger último admin ativo e registrar operações administrativas.
-4. Tests negativos diretos nas Edge Functions e APIs, incluindo assistente/advogado, tenant externo, sessão revogada e JWT inválido.
+2. Publicar em homologação a migration e a Edge Function de administração, com `APP_URL` e SMTP configurados.
+3. Validar as interfaces de equipe, auditoria e sessões com contas fictícias no navegador hospedado, incluindo teclado e celular.
+4. Repetir em homologação os cenários negativos de assistente/advogado, tenant externo, sessão revogada e JWT inválido. Os testes locais já cobrem esses casos.
 5. Só então abrir clientes e processos (fase 2).
 
 ### Decisões e pontos a fechar

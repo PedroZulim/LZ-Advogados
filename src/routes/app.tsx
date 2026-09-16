@@ -9,9 +9,10 @@ import {
   RecoveryPage,
 } from '@/features/auth/auth-pages'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
+import { UsersPage, SessionsPage, AuditPage } from '@/features/admin/admin-pages'
 
-function Workspace() {
+function Workspace({ children }: { children?: ReactNode }) {
   const { state, profile, signOut, refresh } = useAuth()
   const [error, setError] = useState('')
   if (state === 'loading')
@@ -63,38 +64,53 @@ function Workspace() {
           <LogOut size={17} /> Sair
         </Button>
       </header>
+      <nav className="workspace-nav" aria-label="Navegação principal">
+        <Link to="/dashboard">Início</Link>
+        <Link to="/account/sessions">Minhas sessões</Link>
+        {profile?.role === 'admin' && (
+          <>
+            <Link to="/admin/users">Equipe</Link>
+            <Link to="/admin/audit">Auditoria</Link>
+          </>
+        )}
+      </nav>
       <main>
-        <span className="eyebrow">ESPAÇO DO ESCRITÓRIO</span>
-        <h1>Olá, {profile?.full_name.split(' ')[0]}.</h1>
-        <p className="muted">Seu acesso foi confirmado.</p>
-        <section className="foundation-card">
-          <ShieldCheck size={28} />
-          <h2>Conta protegida</h2>
-          <p>
-            Você está conectado com verificação em duas etapas e vínculo ativo com seu escritório.
-          </p>
-          <dl>
-            <div>
-              <dt>Nome</dt>
-              <dd>{profile?.full_name}</dd>
-            </div>
-            <div>
-              <dt>Perfil</dt>
-              <dd>
-                {
-                  { admin: 'Administrador', lawyer: 'Advogado', assistant: 'Assistente' }[
-                    profile!.role
-                  ]
-                }
-              </dd>
-            </div>
-          </dl>
-        </section>
-        <p className="muted">
-          Agenda, clientes, processos e prazos serão disponibilizados nas próximas etapas de
-          implantação.
-        </p>
-        <p role="status">{error}</p>
+        {children ?? (
+          <>
+            <span className="eyebrow">ESPAÇO DO ESCRITÓRIO</span>
+            <h1>Olá, {profile?.full_name.split(' ')[0]}.</h1>
+            <p className="muted">Seu acesso foi confirmado.</p>
+            <section className="foundation-card">
+              <ShieldCheck size={28} />
+              <h2>Conta protegida</h2>
+              <p>
+                Você está conectado com verificação em duas etapas e vínculo ativo com seu
+                escritório.
+              </p>
+              <dl>
+                <div>
+                  <dt>Nome</dt>
+                  <dd>{profile?.full_name}</dd>
+                </div>
+                <div>
+                  <dt>Perfil</dt>
+                  <dd>
+                    {
+                      { admin: 'Administrador', lawyer: 'Advogado', assistant: 'Assistente' }[
+                        profile!.role
+                      ]
+                    }
+                  </dd>
+                </div>
+              </dl>
+            </section>
+            <p className="muted">
+              Agenda, clientes, processos e prazos serão disponibilizados nas próximas etapas de
+              implantação.
+            </p>
+            <p role="status">{error}</p>
+          </>
+        )}
       </main>
     </div>
   )
@@ -109,6 +125,30 @@ export function App() {
           <Route path="/auth/recovery" element={<RecoveryPage />} />
           <Route path="/auth/update-password" element={<PasswordPage />} />
           <Route path="/dashboard" element={<Workspace />} />
+          <Route
+            path="/admin/users"
+            element={
+              <Workspace>
+                <UsersPage />
+              </Workspace>
+            }
+          />
+          <Route
+            path="/admin/audit"
+            element={
+              <Workspace>
+                <AuditPage />
+              </Workspace>
+            }
+          />
+          <Route
+            path="/account/sessions"
+            element={
+              <Workspace>
+                <SessionsPage />
+              </Workspace>
+            }
+          />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route
             path="*"

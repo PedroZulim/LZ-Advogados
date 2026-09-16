@@ -29,5 +29,11 @@ jobs:
       - run: npx supabase start
       - run: npx supabase db reset
       - run: npx supabase test db
+      - name: Test authenticated administration with local Auth and MFA
+        run: |
+          npx supabase status --output env > .env.integration
+          printf 'APP_URL=http://127.0.0.1:5173\n' > .env.functions.local
+          npx supabase functions serve admin-users --env-file .env.functions.local > /tmp/lz-edge.log 2>&1 &
+          node --env-file=.env.integration scripts/test-admin-integration.mjs
       - if: always()
         run: npx supabase stop --no-backup
