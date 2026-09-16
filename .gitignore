@@ -203,6 +203,19 @@ cython_debug/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
+# Web / Supabase
+!src/lib/
+!src/lib/**
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.env*
+!.env.example
+!.env.admin.example
+supabase/.temp/
+supabase/.branches/
+
 # Ruff stuff:
 .ruff_cache/
 

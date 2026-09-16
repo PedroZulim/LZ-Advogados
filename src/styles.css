@@ -1,0 +1,372 @@
+@import 'tailwindcss';
+@theme {
+  --color-primary: #142d40;
+  --font-sans: 'Segoe UI', sans-serif;
+}
+:root {
+  font-family: 'Segoe UI', sans-serif;
+  color: #182c3b;
+  background: #f7f9fb;
+  font-synthesis: none;
+  line-height: 1.5;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+}
+button,
+input {
+  font: inherit;
+}
+a {
+  color: #24587b;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+button,
+a,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+:focus-visible {
+  outline: 3px solid #70a6cc;
+  outline-offset: 4px;
+}
+.auth-layout {
+  display: grid;
+  grid-template-columns: minmax(340px, 44%) 1fr;
+  min-height: 100dvh;
+}
+.brand-panel {
+  background: #142d40;
+  color: #f2f6fa;
+  padding: 52px 12%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 700px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 22px;
+  letter-spacing: -0.4px;
+  font-weight: 600;
+  color: inherit;
+}
+.brand-symbol {
+  display: grid;
+  place-items: center;
+  width: 49px;
+  height: 49px;
+  border: 1px solid #607585;
+  border-radius: 12px;
+  color: #dcc29a;
+}
+.brand small {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  margin-top: 2px;
+  color: #b4c4d0;
+}
+.eyebrow {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-weight: 650;
+  color: #d3b786;
+}
+.brand-message {
+  padding: 80px 0;
+}
+.brand-message h1 {
+  font-family: Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(38px, 4vw, 60px);
+  letter-spacing: -1.4px;
+  line-height: 1.13;
+  margin: 25px 0;
+}
+.brand-message p {
+  color: #bed0dc;
+  line-height: 1.9;
+  font-size: 17px;
+}
+.brand-rule {
+  width: 52px;
+  height: 2px;
+  background: #c8aa7a;
+  margin-top: 34px;
+}
+.brand-footer {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: #b6c6d2;
+  font-size: 14px;
+}
+.auth-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 60px 36px 24px;
+  position: relative;
+}
+.auth-card {
+  width: 100%;
+  max-width: 390px;
+  margin: auto 0;
+  padding: 36px 0;
+}
+.icon-tile {
+  display: inline-flex;
+  padding: 13px;
+  border: 1px solid #dce4ea;
+  border-radius: 13px;
+  background: white;
+  margin-bottom: 28px;
+}
+.form-eyebrow {
+  color: #64788b;
+  letter-spacing: 1.5px;
+  font-size: 11px;
+}
+h2 {
+  font-weight: 650;
+  font-size: 28px;
+  line-height: 1.25;
+  letter-spacing: -0.8px;
+  margin: 12px 0;
+}
+.muted {
+  color: #637587;
+}
+.intro {
+  margin-bottom: 31px;
+  font-size: 15px;
+}
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 18px 0 8px;
+}
+input {
+  display: block;
+  width: 100%;
+  border: 1px solid #cdd7e0;
+  border-radius: 7px;
+  background: white;
+  padding: 12px 14px;
+  color: #142d40;
+  min-height: 48px;
+}
+input::placeholder {
+  color: #83919e;
+}
+input[aria-invalid='true'] {
+  border-color: #ad4646;
+}
+.label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.label-row a {
+  font-size: 13px;
+}
+.button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px 18px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  min-height: 46px;
+  transition: background 0.15s;
+}
+.button-primary {
+  background: #173a53;
+  color: white;
+}
+.button-primary:hover {
+  background: #214e6c;
+}
+.button-outline {
+  background: white;
+  color: #173a53;
+  border-color: #cdd7e0;
+}
+.button-ghost {
+  color: #36546a;
+  background: transparent;
+}
+.button-ghost:hover {
+  background: #e8eef3;
+}
+.button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.full-width {
+  width: 100%;
+}
+.submit {
+  margin-top: 24px;
+}
+.auth-note {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  border-top: 1px solid #dfe6ec;
+  margin-top: 30px;
+  padding-top: 22px;
+  color: #65798a;
+}
+.auth-note svg {
+  flex-shrink: 0;
+}
+.auth-note p {
+  margin: 0;
+  font-size: 13px;
+}
+.invite-note {
+  text-align: center;
+  font-size: 13px;
+  color: #6e7f8c;
+  margin-top: 32px;
+}
+.auth-main footer {
+  font-size: 12px;
+  color: #7e8c98;
+  padding-top: 30px;
+}
+.setup-notice,
+.feedback {
+  padding: 12px 14px;
+  background: #eaf0f5;
+  border-left: 3px solid #647f94;
+  border-radius: 4px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.back-link {
+  display: inline-block;
+  margin-top: 24px;
+  font-size: 14px;
+}
+.qr-block {
+  margin: 20px 0;
+  font-size: 14px;
+}
+.qr-block img {
+  width: 210px;
+  max-width: 100%;
+  background: white;
+  border-radius: 8px;
+}
+.center-state {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+}
+.workspace header {
+  padding: 20px 5%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #dfe6ec;
+  background: white;
+}
+.workspace-brand {
+  color: #173a53;
+}
+.workspace main {
+  max-width: 1000px;
+  margin: 64px auto;
+  padding: 0 24px;
+}
+.workspace h1 {
+  font-family: Georgia, serif;
+  font-size: 40px;
+  margin: 18px 0 6px;
+}
+.workspace .eyebrow {
+  color: #64788b;
+}
+.foundation-card {
+  background: white;
+  border: 1px solid #dfe6ec;
+  border-radius: 12px;
+  padding: 32px;
+  margin: 32px 0;
+  max-width: 600px;
+}
+.foundation-card h2 {
+  font-size: 23px;
+}
+dl {
+  margin: 24px 0 0;
+}
+dl div {
+  padding: 12px 0;
+  border-top: 1px solid #e8edf1;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+dt {
+  color: #637587;
+}
+dd {
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+  }
+  .brand-panel {
+    min-height: auto;
+    padding: 24px;
+  }
+  .brand-message,
+  .brand-footer {
+    display: none;
+  }
+  .auth-main {
+    padding: 28px 24px 20px;
+  }
+  .auth-card {
+    padding: 18px 0;
+  }
+  .brand {
+    font-size: 19px;
+  }
+  .icon-tile {
+    margin-bottom: 20px;
+  }
+  .workspace header {
+    padding: 16px;
+  }
+  .workspace main {
+    margin-top: 36px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
