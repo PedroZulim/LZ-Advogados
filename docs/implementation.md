@@ -43,7 +43,7 @@ Atualização de 17/09/2026: fase 2 implementada com clientes, áreas jurídicas
 - Cancelamento de evento por assistente está descrito como “conforme regra”. Definir regra antes da fase 3.
 - Cache offline ainda precisa de projeção explícita: títulos livres também podem conter dados pessoais. Não basta remover CPF/CNPJ de um objeto completo.
 - Chave dedupe de lembrete deve considerar a revisão da data fatal, evitando que lembretes antigos suprimam os novos após reagendamento.
-- Tema claro nesta etapa; dark/system, agenda, auditoria, Resend, PWA e busca permanecem no backlog da SPEC.
+- Tema claro nesta etapa; dark/system, agenda, auditoria, Resend e busca permanecem no backlog da SPEC. A shell instalável da PWA está configurada; a projeção segura de dados jurídicos offline continua pendente e não foi ampliada nesta etapa.
 
 ## Limites de validação
 
