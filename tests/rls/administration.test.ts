@@ -36,7 +36,11 @@ beforeAll(async () => {
     grant usage on schema auth to authenticated, anon;
     grant execute on function auth.uid(), auth.jwt() to authenticated, anon;
   `)
-  for (const file of ['202609160001_identity.sql', '202609160002_user_administration.sql'])
+  for (const file of [
+    '202609160001_identity.sql',
+    '202609160002_user_administration.sql',
+    '202609170001_remove_member.sql',
+  ])
     await db.exec(readFileSync(`supabase/migrations/${file}`, 'utf8'))
   await db.exec(readFileSync('supabase/seed.sql', 'utf8'))
 })
@@ -63,6 +67,39 @@ afterAll(async () => {
   await db?.close()
 })
 describe('Privileged user administration', { concurrent: false }, () => {
+  it('removes only inactive members, hides them and preserves the audit history', async () => {
+    await expect(operation('remove_member', { user_id: uid(2) })).rejects.toThrow(
+      'member_must_be_inactive',
+    )
+    await operation('set_active', { user_id: uid(2), is_active: false })
+    await operation('remove_member', { user_id: uid(2), reason: 'Saída da equipe' })
+    expect((await operation('list')).users).toHaveLength(3)
+    expect(
+      (await owner(`select removed_at from public.profiles where id = '${uid(2)}'`)).rows[0]
+        .removed_at,
+    ).not.toBeNull()
+    expect((await owner(`select * from auth.users where id = '${uid(2)}'`)).rows).toHaveLength(1)
+    expect(
+      (await owner('select action from public.audit_logs order by created_at')).rows.map(
+        (row) => row.action,
+      ),
+    ).toEqual(['user.deactivated', 'user.removed'])
+    await expect(operation('set_active', { user_id: uid(2), is_active: true })).rejects.toThrow(
+      'access_denied',
+    )
+    await expect(operation('remove_member', { user_id: uid(2) })).rejects.toThrow('access_denied')
+  })
+  it('rechecks active state and denies foreign or non-admin removal', async () => {
+    await operation('set_active', { user_id: uid(2), is_active: false })
+    await operation('set_active', { user_id: uid(2), is_active: true })
+    await expect(operation('remove_member', { user_id: uid(2) })).rejects.toThrow(
+      'member_must_be_inactive',
+    )
+    await expect(operation('remove_member', { user_id: uid(4) })).rejects.toThrow('access_denied')
+    await expect(operation('remove_member', { user_id: uid(2) }, 3)).rejects.toThrow(
+      'access_denied',
+    )
+  })
   it.each([2, 3])('rejects admin actions for role of user %i', async (n) => {
     for (const action of [
       'list',

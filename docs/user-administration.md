@@ -44,6 +44,10 @@ O teste de integração recusa endereços diferentes de `http://127.0.0.1:54321`
 
 ## Garantias e limites
 
+Integrantes desativados exibem **Remover integrante** no lugar de **Encerrar sessões**; reativar restaura o botão de sessões. Remover exige confirmação e justificativa e retira o integrante da listagem. Apenas administradores do mesmo escritório podem remover, e o banco recusa a operação se o integrante estiver ativo no momento da confirmação. A remoção é lógica: preserva conta e referências de auditoria, mantém o acesso bloqueado e não oferece reativação pela interface. O e-mail permanece associado à conta existente e não fica disponível para um novo convite. Para manter a possibilidade de reativação, basta deixar o integrante desativado.
+
+A alteração requer a migration `202609170001_remove_member.sql`, novo deploy de `admin-users` e publicação do frontend.
+
 - Usuários autenticados não executam o RPC privilegiado nem escrevem diretamente em `profiles` ou `audit_logs`.
 - O tenant é derivado do perfil persistido. Papel e tenant informados no corpo da requisição não concedem autorização.
 - Alterações são serializadas por escritório, evitando que duas operações removam os últimos administradores simultaneamente.

@@ -185,7 +185,26 @@ try {
     reason: 'Integration test',
   })
   await edge(assistant.token, { action: 'sessions' }, 401)
+  await edge(
+    first.token,
+    { action: 'remove_member', user_id: first.id, reason: 'Active member test' },
+    409,
+  )
+  await edge(first.token, {
+    action: 'remove_member',
+    user_id: assistant.id,
+    reason: 'Member removal test',
+  })
+  assert(
+    !(await edge(first.token, { action: 'list' })).users.some((user) => user.id === assistant.id),
+  )
+  await edge(
+    first.token,
+    { action: 'set_active', user_id: assistant.id, is_active: true, reason: 'Removed member test' },
+    403,
+  )
   const audit = await edge(first.token, { action: 'audit' })
+  assert(audit.events.some((e) => e.action === 'user.removed'))
   assert(audit.events.some((e) => e.action === 'user.invited'))
   assert(audit.events.some((e) => e.action === 'user.role_changed'))
   assert.equal((await edge(foreign.token, { action: 'audit' })).events.length, 0)
