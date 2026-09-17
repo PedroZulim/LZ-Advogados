@@ -41,6 +41,14 @@ secure_password_change = true
 [auth.mfa]
 max_enrolled_factors = 3
 
+[auth.email.template.invite]
+subject = "Convite para o LZ Advogados"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.recovery]
+subject = "Definir senha — LZ Advogados"
+content_path = "./supabase/templates/recovery.html"
+
 [auth.mfa.totp]
 enroll_enabled = true
 verify_enabled = true

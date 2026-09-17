@@ -40,6 +40,7 @@ beforeAll(async () => {
     '202609160001_identity.sql',
     '202609160002_user_administration.sql',
     '202609170001_remove_member.sql',
+    '202609170003_readmit_member.sql',
   ])
     await db.exec(readFileSync(`supabase/migrations/${file}`, 'utf8'))
   await db.exec(readFileSync('supabase/seed.sql', 'utf8'))
@@ -67,6 +68,47 @@ afterAll(async () => {
   await db?.close()
 })
 describe('Privileged user administration', { concurrent: false }, () => {
+  it('readmits with an explicitly selected role and destroys every old session', async () => {
+    await operation('set_active', { user_id: uid(2), is_active: false })
+    await operation('remove_member', { user_id: uid(2), reason: 'Desligamento' })
+    expect((await operation('list_removed')).users).toHaveLength(1)
+    await owner(`insert into auth.sessions(id,user_id) values ('${sid(9)}','${uid(2)}')`)
+    await operation('readmit_member', {
+      user_id: uid(2),
+      role: 'assistant',
+      reason: 'Nova contratação',
+    })
+    expect((await operation('list_removed')).users).toHaveLength(0)
+    expect((await operation('list')).users).toHaveLength(4)
+    const profile = (
+      await owner(`select role,is_active,removed_at from public.profiles where id='${uid(2)}'`)
+    ).rows[0]
+    expect(profile).toEqual({ role: 'assistant', is_active: true, removed_at: null })
+    expect(
+      (await owner(`select * from auth.sessions where user_id='${uid(2)}'`)).rows,
+    ).toHaveLength(0)
+    expect(
+      (await owner("select * from public.audit_logs where action='user.readmitted'")).rows,
+    ).toHaveLength(1)
+    await expect(
+      operation('readmit_member', { user_id: uid(2), role: 'admin', reason: 'Repeated request' }),
+    ).rejects.toThrow('access_denied')
+  })
+  it('limits readmission to same-tenant admins with live MFA and a valid role', async () => {
+    await operation('set_active', { user_id: uid(2), is_active: false })
+    await operation('remove_member', { user_id: uid(2), reason: 'Desligamento' })
+    const payload = { user_id: uid(2), role: 'lawyer', reason: 'Nova contratação' }
+    await expect(operation('readmit_member', payload, 3)).rejects.toThrow('access_denied')
+    await expect(operation('list_removed', {}, 3)).rejects.toThrow('access_denied')
+    await expect(operation('readmit_member', payload, 4)).rejects.toThrow('access_denied')
+    await expect(operation('readmit_member', payload, 1, 'aal1')).rejects.toThrow('access_denied')
+    await expect(operation('readmit_member', { ...payload, role: 'owner' })).rejects.toThrow(
+      'invalid_request',
+    )
+    await expect(operation('readmit_member', { ...payload, reason: '' })).rejects.toThrow(
+      'invalid_request',
+    )
+  })
   it('removes only inactive members, hides them and preserves the audit history', async () => {
     await expect(operation('remove_member', { user_id: uid(2) })).rejects.toThrow(
       'member_must_be_inactive',

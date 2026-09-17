@@ -44,9 +44,25 @@ O teste de integração recusa endereços diferentes de `http://127.0.0.1:54321`
 
 ## Garantias e limites
 
-Integrantes desativados exibem **Remover integrante** no lugar de **Encerrar sessões**; reativar restaura o botão de sessões. Remover exige confirmação e justificativa e retira o integrante da listagem. Apenas administradores do mesmo escritório podem remover, e o banco recusa a operação se o integrante estiver ativo no momento da confirmação. A remoção é lógica: preserva conta e referências de auditoria, mantém o acesso bloqueado e não oferece reativação pela interface. O e-mail permanece associado à conta existente e não fica disponível para um novo convite. Para manter a possibilidade de reativação, basta deixar o integrante desativado.
+Integrantes desativados exibem **Remover integrante** no lugar de **Encerrar sessões**; reativar restaura o botão de sessões. Remover exige confirmação e justificativa e retira o integrante da equipe atual. Apenas administradores do mesmo escritório podem remover, e o banco recusa a operação se o integrante estiver ativo no momento da confirmação. A remoção é lógica: preserva conta e referências de auditoria e mantém o acesso bloqueado.
 
-A alteração requer a migration `202609170001_remove_member.sql`, novo deploy de `admin-users` e publicação do frontend.
+Se a pessoa voltar ao escritório, abrir **Integrantes removidos → Readmitir integrante**, escolher o novo perfil e registrar a justificativa. A mesma identidade e o histórico são preservados; todas as sessões anteriores são encerradas antes da liberação. O perfil sugerido é Assistente, sem restaurar automaticamente privilégios antigos. A readmissão não envia e-mail: a pessoa entra novamente com senha e MFA ou usa **Esqueci minha senha**. O e-mail continua associado à conta existente, portanto não se deve enviar um novo convite para esse endereço. O autenticador existente também é preservado; redefinir a senha não remove MFA.
+
+A readmissão requer a migration `202609170003_readmit_member.sql` e suas predecessoras, novo deploy de `admin-users` e publicação do frontend.
+
+## Primeiro acesso e links de e-mail
+
+O erro `otp_expired` indica link expirado, já utilizado ou inválido. A tela apresenta **Solicitar novo link**, que leva à recuperação de acesso. Esse fluxo também permite definir a primeira senha de uma conta convidada. Abrir somente a mensagem mais recente; o link antigo não volta a funcionar. A recuperação não cria conta, não readmite integrantes removidos e não dispensa MFA.
+
+Os modelos em `supabase/templates/invite.html` e `supabase/templates/recovery.html` levam à página de senha com um token no fragmento da URL. O aplicativo só verifica o token após o clique em **Continuar e definir senha**, evitando o consumo por uma simples pré-visualização do e-mail. Não registrar nem compartilhar esses links.
+
+No Supabase hospedado, **depois de publicar o frontend atualizado**:
+
+1. Em **Authentication → URL Configuration**, definir **Site URL** como `https://lz-advogados.pages.dev` (ou o domínio canônico utilizado) e permitir `/auth/update-password` nesse domínio em **Redirect URLs**.
+2. Em **Authentication → Emails**, copiar o HTML de `invite.html` para **Invite user** e o de `recovery.html` para **Reset password**, salvando cada modelo.
+3. Solicitar um novo link na recuperação de acesso e testar com uma conta fictícia: confirmação, senha e MFA.
+
+`supabase db push` e o deploy da Edge Function não atualizam os modelos de e-mail hospedados. A configuração em `supabase/config.toml` aplica os modelos apenas ao ambiente local após reiniciar o Supabase. Os links padrão antigos continuam compatíveis enquanto forem válidos. Referência: [modelos de e-mail do Supabase](https://supabase.com/docs/guides/auth/auth-email-templates).
 
 - Usuários autenticados não executam o RPC privilegiado nem escrevem diretamente em `profiles` ou `audit_logs`.
 - O tenant é derivado do perfil persistido. Papel e tenant informados no corpo da requisição não concedem autorização.

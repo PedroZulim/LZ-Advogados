@@ -5,7 +5,8 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { LockKeyhole, ShieldCheck, ArrowRight, Scale } from 'lucide-react'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
-import { getSupabase, supabase } from '@/lib/supabase'
+import { getSupabase, supabase, initialEmailLink, clearInitialEmailLink } from '@/lib/supabase'
+import { recoveryFeedback } from './email-link'
 import { APP_NAME } from '@/lib/config'
 import { loginSchema, passwordSchema, totpSchema } from '@/schemas/auth'
 import { useAuth } from './auth-provider'
@@ -277,21 +278,23 @@ export function RecoveryPage() {
   return (
     <AuthLayout>
       <h2>Recuperar acesso</h2>
-      <p className="muted intro">Informe seu e-mail para receber as instruções.</p>
+      <p className="muted intro">
+        Informe o e-mail do convite ou da sua conta para receber um novo link e definir a senha.
+      </p>
       <form
         onSubmit={async (event) => {
           event.preventDefault()
           setBusy(true)
           try {
-            await getSupabase().auth.resetPasswordForEmail(email, {
+            const { error } = await getSupabase().auth.resetPasswordForEmail(email.trim(), {
               redirectTo: `${window.location.origin}/auth/update-password`,
             })
+            setMessage(recoveryFeedback(error))
           } catch {
-            /* Same response prevents account enumeration. */
+            setMessage(
+              'Não foi possível conectar ao serviço. Verifique sua conexão e tente novamente.',
+            )
           }
-          setMessage(
-            'Se houver uma conta para este e-mail, você receberá as instruções de recuperação.',
-          )
           setBusy(false)
         }}
       >
@@ -320,6 +323,12 @@ export function PasswordPage() {
   const navigate = useNavigate()
   const [message, setMessage] = useState('')
   const { state } = useAuth()
+  const [link, setLink] = useState(initialEmailLink)
+  const [verifying, setVerifying] = useState(false)
+  // Keep the callback in this page only; returning from MFA must not reuse a consumed link.
+  useEffect(() => {
+    clearInitialEmailLink()
+  }, [])
   const {
     register,
     handleSubmit,
@@ -329,8 +338,67 @@ export function PasswordPage() {
     <AuthLayout>
       <h2>Defina sua senha</h2>
       <p className="muted intro">Use uma senha exclusiva com pelo menos 12 caracteres.</p>
-      {state === 'signed-out' ? (
-        <p className="feedback">Abra o link enviado ao seu e-mail para continuar.</p>
+      {link.kind === 'error' ? (
+        <>
+          <Feedback message={link.message} />
+          <Button asChild className="full-width">
+            <Link to="/auth/recovery">Solicitar novo link</Link>
+          </Button>
+          <Link className="back-link" to="/login">
+            Já defini minha senha — entrar
+          </Link>
+        </>
+      ) : link.kind === 'verify' ? (
+        <>
+          <p>
+            Confirme abaixo para validar seu link e continuar. O link será utilizado somente após
+            esta confirmação.
+          </p>
+          <Button
+            disabled={verifying || !supabase}
+            onClick={async () => {
+              setVerifying(true)
+              setMessage('')
+              try {
+                const { error } = await getSupabase().auth.verifyOtp({
+                  token_hash: link.tokenHash,
+                  type: link.type,
+                })
+                if (error) {
+                  setLink({
+                    kind: 'error',
+                    message:
+                      'Este link expirou, já foi utilizado ou não é mais válido. Solicite um novo link.',
+                  })
+                  return
+                }
+                setLink({ kind: 'none' })
+                navigate('/auth/update-password', { replace: true })
+              } catch {
+                setMessage('Não foi possível conectar. Tente novamente.')
+              } finally {
+                setVerifying(false)
+              }
+            }}
+          >
+            {verifying ? 'Validando…' : 'Continuar e definir senha'}
+          </Button>
+        </>
+      ) : state === 'loading' ? (
+        <p role="status">Validando seu acesso…</p>
+      ) : state === 'signed-out' || state === 'denied' ? (
+        <>
+          <p className="feedback">
+            Não há uma sessão válida para definir a senha. Abra o link mais recente do seu e-mail ou
+            solicite um novo.
+          </p>
+          <Button asChild className="full-width">
+            <Link to="/auth/recovery">Solicitar novo link</Link>
+          </Button>
+          <Link className="back-link" to="/login">
+            Voltar ao login
+          </Link>
+        </>
       ) : (
         <form
           onSubmit={handleSubmit(async (values) => {
@@ -361,15 +429,17 @@ export function PasswordPage() {
             {...register('confirmation')}
           />
           <Feedback message={errors.confirmation?.message ?? ''} />
-          <Button className="full-width submit" disabled={isSubmitting || state === 'loading'}>
+          <Button className="full-width submit" disabled={isSubmitting}>
             Salvar senha
           </Button>
         </form>
       )}
       <Feedback message={message} />
-      <Link className="back-link" to="/auth/mfa?next=password">
-        Confirmar autenticador
-      </Link>
+      {link.kind === 'none' && (state === 'ready' || state === 'mfa-required') && (
+        <Link className="back-link" to="/auth/mfa?next=password">
+          Confirmar autenticador
+        </Link>
+      )}
     </AuthLayout>
   )
 }
