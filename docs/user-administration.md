@@ -56,7 +56,9 @@ O erro `otp_expired` indica link expirado, já utilizado ou inválido. A tela ap
 
 Os modelos em `supabase/templates/invite.html` e `supabase/templates/recovery.html` levam à página de senha com um token no fragmento da URL. O aplicativo só verifica o token após o clique em **Continuar e definir senha**, evitando o consumo por uma simples pré-visualização do e-mail. Não registrar nem compartilhar esses links.
 
-No Supabase hospedado, **depois de publicar o frontend atualizado**:
+No Supabase hospedado, a edição dos modelos em novos projetos gratuitos exige SMTP próprio. Configurar primeiro o provedor seguindo [E-mails de acesso e SMTP](email-smtp.md). Sem essa configuração, manter os modelos padrão; a readmissão e a mensagem de link expirado podem ser publicadas normalmente.
+
+Com SMTP configurado, **depois de publicar o frontend atualizado**:
 
 1. Em **Authentication → URL Configuration**, definir **Site URL** como `https://lz-advogados.pages.dev` (ou o domínio canônico utilizado) e permitir `/auth/update-password` nesse domínio em **Redirect URLs**.
 2. Em **Authentication → Emails**, copiar o HTML de `invite.html` para **Invite user** e o de `recovery.html` para **Reset password**, salvando cada modelo.

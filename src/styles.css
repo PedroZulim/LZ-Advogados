@@ -417,6 +417,79 @@ dd {
 }
 .admin-form label {
   flex: 1 1 180px;
+  margin: 0;
+}
+.admin-form label > input,
+.admin-form label > select,
+.record-fields label > input,
+.record-fields label > select,
+.record-fields label > textarea,
+.client-picker > input:not([type='hidden']) {
+  margin-top: 8px;
+}
+.admin-form input,
+.admin-form select,
+.record-fields input:not([type='hidden']),
+.record-fields select {
+  height: 48px;
+}
+.admin-form > .button {
+  min-height: 48px;
+}
+.record-fields {
+  align-items: start;
+}
+.client-picker {
+  position: relative;
+  min-width: 0;
+}
+.client-options {
+  position: absolute;
+  top: 76px;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  background: white;
+  border: 1px solid #c5d1dc;
+  border-radius: 7px;
+  box-shadow: 0 8px 24px #142d4020;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.client-options p {
+  padding: 10px 14px;
+  font-size: 13px;
+}
+.client-option {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 4px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  background: white;
+  cursor: pointer;
+  color: #142d40;
+  overflow-wrap: anywhere;
+}
+.client-option.active,
+.client-option:hover,
+.client-option[aria-selected='true'] {
+  background: #eaf1f6;
+}
+.client-option small {
+  color: #637587;
+}
+.confirmation-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.confirmation-check input {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
 }
 .admin-form .button {
   margin-bottom: 0;
@@ -530,6 +603,7 @@ textarea {
   margin-top: 6px;
 }
 .field-hint {
+  margin: 8px 0 0;
   font-size: 13px;
   color: #637587;
   align-self: center;

@@ -6,6 +6,8 @@ import { useAuth } from '@/features/auth/auth-provider'
 import { getSupabase } from '@/lib/supabase'
 import {
   archiveRecord,
+  deleteRecord,
+  reactivateClient,
   getRecord,
   lookups,
   recordError,
@@ -16,6 +18,7 @@ import {
   type Kind,
   type LegalRecord,
 } from './api'
+import { ClientPicker } from './client-picker'
 import { clientSchema, caseSchema, statusLabels, sideLabels } from './schema'
 
 const title = (record: LegalRecord) => ('name' in record ? record.name : record.case_number)
@@ -165,7 +168,7 @@ export function RecordPage({ kind, creating = false }: { kind: Kind; creating?: 
   const cache = useQueryClient()
   const navigate = useNavigate()
   const [editing, setEditing] = useState(creating)
-  const [archiving, setArchiving] = useState(false)
+  const [action, setAction] = useState<'archive' | 'delete' | 'reactivate' | null>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const record = useQuery({
@@ -186,7 +189,7 @@ export function RecordPage({ kind, creating = false }: { kind: Kind; creating?: 
   async function invalidate() {
     await Promise.all([
       cache.invalidateQueries({ queryKey: ['records'] }),
-      cache.invalidateQueries({ queryKey: ['record', kind, id] }),
+      cache.invalidateQueries({ queryKey: ['record'] }),
       cache.invalidateQueries({ queryKey: ['audit'] }),
     ])
   }
@@ -336,30 +339,77 @@ export function RecordPage({ kind, creating = false }: { kind: Kind; creating?: 
               </Button>
             )}
             {current?.status !== 'archived' && profile?.role !== 'assistant' && (
-              <Button variant="outline" onClick={() => setArchiving(true)}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setAction('archive')
+                  setMessage('')
+                }}
+              >
                 Arquivar {text.single}
               </Button>
             )}
+            {profile?.role === 'admin' && kind === 'client' && current?.status === 'archived' && (
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => {
+                  setAction('reactivate')
+                  setMessage('')
+                }}
+              >
+                Reativar cliente
+              </Button>
+            )}
+            {profile?.role === 'admin' && (
+              <Button
+                variant="dangerOutline"
+                disabled={busy}
+                onClick={() => {
+                  setAction('delete')
+                  setMessage('')
+                }}
+              >
+                Excluir {text.single}
+              </Button>
+            )}
           </div>
-          {archiving && current && (
+          {action && current && (
             <section className="admin-card">
-              <h2>Arquivar {text.single}</h2>
+              <h2>
+                {action === 'delete'
+                  ? 'Excluir definitivamente'
+                  : action === 'reactivate'
+                    ? 'Reativar'
+                    : 'Arquivar'}{' '}
+                {text.single}
+              </h2>
               <p>
-                O cadastro ficará disponível para consulta no histórico, sem edição.
-                {kind === 'client' &&
-                  ' Os processos vinculados serão mantidos com suas situações atuais.'}
+                {action === 'delete'
+                  ? `O cadastro de ${title(current)} será apagado definitivamente do banco. Esta ação não pode ser desfeita. O histórico de auditoria permanece. ${kind === 'client' ? 'Exclua ou transfira os processos vinculados antes de excluir este cliente.' : 'O cadastro do cliente será mantido.'}`
+                  : action === 'reactivate'
+                    ? 'O cliente voltará à lista de ativos e poderá ser editado e vinculado a novos processos. Os processos existentes mantêm suas situações.'
+                    : 'O cadastro ficará disponível para consulta no histórico, sem edição. Os processos vinculados manterão suas situações.'}
               </p>
               <form
+                key={action}
                 onSubmit={async (event) => {
                   event.preventDefault()
                   const reason = String(new FormData(event.currentTarget).get('reason'))
                   setBusy(true)
                   setMessage('')
                   try {
-                    await archiveRecord(kind, current, reason)
-                    setArchiving(false)
+                    if (action === 'delete') await deleteRecord(kind, current, reason)
+                    else if (action === 'reactivate') await reactivateClient(current, reason)
+                    else await archiveRecord(kind, current, reason)
+                    const completed = action
+                    setAction(null)
                     await invalidate()
-                    setMessage('Cadastro arquivado.')
+                    if (completed === 'delete') navigate('/' + tableFor(kind), { replace: true })
+                    else
+                      setMessage(
+                        completed === 'reactivate' ? 'Cliente reativado.' : 'Cadastro arquivado.',
+                      )
                   } catch (error) {
                     setMessage((error as Error).message)
                   } finally {
@@ -371,13 +421,27 @@ export function RecordPage({ kind, creating = false }: { kind: Kind; creating?: 
                   Justificativa
                   <textarea name="reason" required minLength={3} maxLength={500} />
                 </label>
+                {action === 'delete' && (
+                  <label className="confirmation-check">
+                    <input type="checkbox" required /> Entendo que esta exclusão é definitiva.
+                  </label>
+                )}
                 <div className="action-row">
-                  <Button disabled={busy}>Confirmar arquivamento</Button>
+                  <Button
+                    disabled={busy}
+                    variant={action === 'delete' ? 'dangerOutline' : 'default'}
+                  >
+                    {action === 'delete'
+                      ? 'Excluir definitivamente'
+                      : action === 'reactivate'
+                        ? 'Confirmar reativação'
+                        : 'Confirmar arquivamento'}
+                  </Button>
                   <Button
                     disabled={busy}
                     type="button"
                     variant="ghost"
-                    onClick={() => setArchiving(false)}
+                    onClick={() => setAction(null)}
                   >
                     Cancelar
                   </Button>
@@ -411,20 +475,9 @@ function RecordForm({
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  const [clientQuery, setClientQuery] = useState('')
   const [selectedClient, setSelectedClient] = useState(
     record && 'client_id' in record ? record.client_id : (initialClient?.id ?? ''),
   )
-  const clientResults = useQuery({
-    queryKey: ['records', 'client-picker', clientQuery],
-    queryFn: () => searchRecords('client', clientQuery, 'active', 0),
-    enabled: kind === 'case',
-  })
-  const availableClients = (clientResults.data ?? []) as ClientRecord[]
-  const options =
-    initialClient && !availableClients.some((c) => c.id === initialClient.id)
-      ? [initialClient, ...availableClients]
-      : availableClients
   function value(name: string, fallback = '') {
     return String((record as unknown as Record<string, unknown> | undefined)?.[name] ?? fallback)
   }
@@ -496,42 +549,17 @@ function RecordForm({
             </>
           ) : (
             <>
-              <label>
-                Buscar cliente
-                <input
-                  value={clientQuery}
-                  onChange={(event) => setClientQuery(event.target.value)}
-                  placeholder="Digite o nome, e-mail ou documento"
-                  maxLength={160}
-                />
-              </label>
-              <label>
-                Cliente
-                <select
-                  name="client_id"
-                  required
-                  value={selectedClient}
-                  onChange={(event) => setSelectedClient(event.target.value)}
-                >
-                  <option value="">Selecione</option>
-                  {options.map((client) => (
-                    <option key={client.id} value={client.id}>
-                      {client.name}
-                      {client.status === 'archived' ? ' (arquivado)' : ''}
-                    </option>
-                  ))}
-                  {selectedClient && !options.some((c) => c.id === selectedClient) && (
-                    <option value={selectedClient}>Cliente selecionado</option>
-                  )}
-                </select>
-                <span className="field-error">
-                  {fieldErrors.client_id || clientResults.error?.message}
-                </span>
-              </label>
-              {input('case_number', 'Número / identificador do processo', 100, true)}
-              <p className="field-hint">
-                Aceita números CNJ e identificadores administrativos ou internos.
-              </p>
+              <ClientPicker
+                value={selectedClient}
+                onChange={setSelectedClient}
+                error={fieldErrors.client_id}
+              />
+              <div>
+                {input('case_number', 'Número / identificador do processo', 100, true)}
+                <p className="field-hint">
+                  Aceita números CNJ e identificadores administrativos ou internos.
+                </p>
+              </div>
               {input('tribunal', 'Tribunal', 160)}
               {input('court_unit', 'Vara / unidade', 160)}
               <label>

@@ -230,6 +230,64 @@ try {
       .length,
     1,
   )
+  // Lifecycle RPCs must enforce admin-only hard deletion and reactivation on the server.
+  let lifecycleClient = ok(
+    await first.client.from('clients').select('*').eq('id', clientId).single(),
+  )
+  const deletion = {
+    p_kind: 'client',
+    p_id: clientId,
+    p_updated_at: lifecycleClient.updated_at,
+    p_reason: 'Cadastro incorreto de teste',
+  }
+  for (const user of [lawyer, assistant, foreign]) {
+    assert.equal((await user.client.rpc('delete_record', deletion)).error?.message, 'access_denied')
+  }
+  assert.equal(
+    (await first.client.rpc('delete_record', deletion)).error?.message,
+    'client_has_cases',
+  )
+  ok(await first.client.rpc('archive_record', deletion))
+  lifecycleClient = ok(await first.client.from('clients').select('*').eq('id', clientId).single())
+  const reactivation = {
+    p_id: clientId,
+    p_updated_at: lifecycleClient.updated_at,
+    p_reason: 'Reativação de teste',
+  }
+  for (const user of [lawyer, assistant, foreign]) {
+    assert.equal(
+      (await user.client.rpc('reactivate_client', reactivation)).error?.message,
+      'access_denied',
+    )
+  }
+  ok(await first.client.rpc('reactivate_client', reactivation))
+  lifecycleClient = ok(await first.client.from('clients').select('*').eq('id', clientId).single())
+  assert.equal(lifecycleClient.status, 'active')
+  assert.equal(lifecycleClient.archived_at, null)
+  const archivedCase = ok(await first.client.from('cases').select('*').eq('id', caseId).single())
+  assert.equal(archivedCase.status, 'archived')
+  ok(
+    await first.client.rpc('delete_record', {
+      ...deletion,
+      p_kind: 'case',
+      p_id: caseId,
+      p_updated_at: archivedCase.updated_at,
+    }),
+  )
+  assert.equal(ok(await first.client.from('cases').select('id').eq('id', caseId)).length, 0)
+  ok(
+    await first.client.rpc('delete_record', {
+      ...deletion,
+      p_updated_at: lifecycleClient.updated_at,
+    }),
+  )
+  assert.equal(ok(await first.client.from('clients').select('id').eq('id', clientId)).length, 0)
+  const replacementClient = ok(await first.client.rpc('save_client', { p_data: clientFields }))
+  ok(
+    await first.client.rpc('save_case', {
+      p_data: { ...caseFields, client_id: replacementClient },
+    }),
+  )
   const lowAssurance = await fetch(`${url}/rest/v1/rpc/save_client`, {
     method: 'POST',
     headers: {

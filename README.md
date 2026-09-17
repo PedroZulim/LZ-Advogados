@@ -32,6 +32,7 @@ O primeiro comando inclui testes SQL em PostgreSQL embarcado. O segundo valida a
 - [Análise da SPEC, decisões e próximos passos](docs/implementation.md)
 - [Arquitetura](docs/architecture.md)
 - [Administração de usuários: implantação e testes](docs/user-administration.md)
+- [E-mails de acesso: domínio, SMTP e modelos](docs/email-smtp.md)
 - [Clientes e processos: implantação e aceite](docs/clients-cases.md)
 - [Segurança](docs/security.md)
 - [Backup e restore](docs/backup-restore.md)
