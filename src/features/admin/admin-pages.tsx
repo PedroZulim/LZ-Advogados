@@ -410,6 +410,9 @@ type AuditEvent = {
   request_id: string
 }
 const eventNames: Record<string, string> = {
+  'client.deleted': 'Cliente excluído definitivamente',
+  'case.deleted': 'Processo excluído definitivamente',
+  'client.reactivated': 'Cliente reativado',
   'user.readmitted': 'Integrante readmitido',
   'client.created': 'Cliente cadastrado',
   'client.updated': 'Cliente atualizado',

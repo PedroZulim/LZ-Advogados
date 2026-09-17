@@ -114,6 +114,107 @@ afterAll(async () => {
   await db?.close()
 })
 describe('Clients and cases database boundaries', { concurrent: false }, () => {
+  async function remove(
+    kind: string,
+    id: string,
+    timestamp: string,
+    reason = 'Cadastro incorreto',
+  ) {
+    return db.query('select public.delete_record($1,$2,$3,$4)', [kind, id, timestamp, reason])
+  }
+  async function reactivate(id: string, timestamp: string, reason = 'Retorno do cliente') {
+    return db.query('select public.reactivate_client($1,$2,$3)', [id, timestamp, reason])
+  }
+  it('hard deletes cases and clients, permits reuse of identifiers and records the action', async () => {
+    const client = await saveClient()
+    const data = await caseData(client)
+    const caseId = await saveCase(data)
+    await remove('case', caseId, await stamp('cases', caseId))
+    expect((await db.query('select * from public.cases where id=$1', [caseId])).rows).toHaveLength(
+      0,
+    )
+    const recreatedCase = await saveCase(data)
+    expect(recreatedCase).not.toBe(caseId)
+    await remove('case', recreatedCase, await stamp('cases', recreatedCase))
+    await remove('client', client, await stamp('clients', client))
+    expect(
+      (await db.query('select * from public.clients where id=$1', [client])).rows,
+    ).toHaveLength(0)
+    expect(await saveClient()).not.toBe(client)
+    expect(
+      (
+        await db.query(
+          "select * from public.audit_logs where action in ('client.deleted','case.deleted')",
+        )
+      ).rows,
+    ).toHaveLength(3)
+  })
+  it('blocks deletion of clients with active or archived cases without cascading', async () => {
+    const client = await saveClient()
+    const caseId = await saveCase(await caseData(client))
+    await expect(remove('client', client, await stamp('clients', client))).rejects.toThrow(
+      'client_has_cases',
+    )
+    await archive('case', caseId, await stamp('cases', caseId))
+    await expect(remove('client', client, await stamp('clients', client))).rejects.toThrow(
+      'client_has_cases',
+    )
+    expect((await db.query('select * from public.clients')).rows).toHaveLength(1)
+    expect((await db.query('select * from public.cases')).rows).toHaveLength(1)
+    expect(
+      (await db.query("select * from public.audit_logs where action='client.deleted'")).rows,
+    ).toHaveLength(0)
+  })
+  it('reactivates the same client without changing existing cases', async () => {
+    const client = await saveClient()
+    const caseId = await saveCase(await caseData(client))
+    await archive('client', client, await stamp('clients', client))
+    await reactivate(client, await stamp('clients', client))
+    expect(
+      (await db.query('select status,archived_at from public.clients where id=$1', [client]))
+        .rows[0],
+    ).toEqual({ status: 'active', archived_at: null })
+    expect(
+      (await db.query('select status from public.cases where id=$1', [caseId])).rows[0],
+    ).toEqual({ status: 'active' })
+    await saveClient({ name: 'Cliente reativado' }, client, await stamp('clients', client))
+    await saveCase(await caseData(client))
+    await expect(reactivate(client, await stamp('clients', client))).rejects.toThrow(
+      'client_not_archived',
+    )
+    expect(
+      (await db.query("select * from public.audit_logs where action='client.reactivated'")).rows,
+    ).toHaveLength(1)
+  })
+  it.each([2, 3, 4])('denies lifecycle mutations to unauthorized user %i', async (n) => {
+    const client = await saveClient()
+    const caseId = await saveCase(await caseData(client))
+    await archive('client', client, await stamp('clients', client))
+    const cstamp = await stamp('clients', client),
+      pstamp = await stamp('cases', caseId)
+    await actor(n)
+    await expect(remove('case', caseId, pstamp)).rejects.toThrow('access_denied')
+    await expect(remove('client', client, cstamp)).rejects.toThrow('access_denied')
+    await expect(reactivate(client, cstamp)).rejects.toThrow('access_denied')
+  })
+  it('rejects stale or invalid lifecycle requests, AAL1 and revoked sessions', async () => {
+    const client = await saveClient(),
+      old = await stamp('clients', client)
+    await archive('client', client, old)
+    const current = await stamp('clients', client)
+    await expect(remove('client', client, old)).rejects.toThrow('record_conflict')
+    await expect(reactivate(client, old)).rejects.toThrow('record_conflict')
+    await expect(remove('client', client, current, ' ')).rejects.toThrow('invalid_reason')
+    await expect(reactivate(client, current, ' ')).rejects.toThrow('invalid_reason')
+    await actor(1, 'aal1')
+    await expect(remove('client', client, current)).rejects.toThrow('access_denied')
+    await expect(reactivate(client, current)).rejects.toThrow('access_denied')
+    await db.exec('reset role')
+    await db.query('delete from auth.sessions where id=$1', [sid()])
+    await actor()
+    await expect(remove('client', client, current)).rejects.toThrow('access_denied')
+    await expect(reactivate(client, current)).rejects.toThrow('access_denied')
+  })
   it.each([1, 2, 3])(
     'allows user %i to create and edit with server-derived tenant and audit',
     async (n) => {

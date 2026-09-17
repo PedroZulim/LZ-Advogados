@@ -32,6 +32,9 @@ export type CaseRecord = Base & {
 export type LegalRecord = ClientRecord | CaseRecord
 export const tableFor = (kind: Kind) => (kind === 'client' ? 'clients' : 'cases')
 const errors: Record<string, string> = {
+  client_has_cases:
+    'Este cliente possui processos vinculados. Exclua ou transfira esses processos antes de excluir o cliente.',
+  client_not_archived: 'Este cliente já está ativo. Atualize o cadastro.',
   access_denied: 'Você não possui permissão para realizar esta ação.',
   record_conflict:
     'Este cadastro foi alterado por outra pessoa. Recarregue a página e confira os dados antes de salvar.',
@@ -88,6 +91,23 @@ export async function saveRecord(kind: Kind, values: Record<string, string>, rec
 export async function archiveRecord(kind: Kind, record: LegalRecord, reason: string) {
   const { error } = await getSupabase().rpc('archive_record', {
     p_kind: kind,
+    p_id: record.id,
+    p_updated_at: record.updated_at,
+    p_reason: reason,
+  })
+  if (error) throw recordError(error)
+}
+export async function deleteRecord(kind: Kind, record: LegalRecord, reason: string) {
+  const { error } = await getSupabase().rpc('delete_record', {
+    p_kind: kind,
+    p_id: record.id,
+    p_updated_at: record.updated_at,
+    p_reason: reason,
+  })
+  if (error) throw recordError(error)
+}
+export async function reactivateClient(record: LegalRecord, reason: string) {
+  const { error } = await getSupabase().rpc('reactivate_client', {
     p_id: record.id,
     p_updated_at: record.updated_at,
     p_reason: reason,

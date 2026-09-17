@@ -4,6 +4,10 @@ Rotas `/clients`, `/clients/new`, `/clients/:id`, `/cases`, `/cases/new` e `/cas
 
 ## Funcionalidades
 
+- O formulário de processos usa um único campo de cliente com busca por nome, e-mail ou documento. Escolher um resultado por clique ou pelas setas e Enter; digitar apenas um nome não cria nem seleciona automaticamente um cliente.
+- Administradores podem reativar clientes arquivados pelo detalhe do cadastro. A identidade e os vínculos são mantidos; processos existentes não mudam de situação.
+- Administradores podem excluir definitivamente clientes e processos, ativos ou arquivados, com justificativa e confirmação explícita. O registro é removido fisicamente da tabela e pode ser cadastrado novamente. Excluir um processo mantém o cliente; excluir cliente com processos vinculados é bloqueado até excluir ou transferir esses processos, inclusive os arquivados. O histórico de auditoria permanece, incluindo eventos anteriores; a exclusão não é uma eliminação de backups ou dos logs históricos.
+
 - Clientes: pessoa física/jurídica, nome, documento opcional, contato, endereço, responsável e observações. A busca encontra nome, e-mail e documento e permite filtrar ativos/arquivados.
 - Processos: cliente, responsável administrador/advogado, número ou identificador, tribunal, vara, área, posição do cliente, parte contrária, situação e observações. A busca encontra números normalizados e parte contrária. O detalhe do cliente permite consultar seus processos.
 - As nove áreas previstas na SPEC são criadas por escritório, inclusive ao criar uma nova organização. Administradores cadastram novas áreas pelo formulário de processo.
@@ -22,6 +26,8 @@ As listas têm páginas de 20 registros. O seletor de clientes busca até 21 res
 ## Backend e implantação
 
 A migration `202609170002_clients_cases.sql` cria as tabelas com RLS e vínculos compostos por organização. Clientes autenticados têm somente SELECT direto. Escritas passam por RPCs transacionais com verificação de sessão/MFA, perfil, tenant e papel. Os campos `organization_id`, timestamps e situações de arquivamento são controlados pelo servidor. As gravações usam o mesmo bloqueio por escritório da administração de usuários para serializar alterações de permissão.
+
+A migration `202609170004_record_lifecycle.sql` adiciona `delete_record` e `reactivate_client`. As duas operações exigem administrador ativo, MFA, sessão válida, organização correta e versão atual do cadastro. Exclusão e auditoria são gravadas na mesma transação. Aplicar essa migration antes de publicar os novos botões; não há mudança de SMTP ou nova Edge Function para essas ações.
 
 Com o projeto de homologação corretamente vinculado, aplicar primeiro o banco:
 

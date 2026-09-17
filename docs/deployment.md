@@ -16,4 +16,6 @@ Cloudflare Pages, quando os gates da SPEC forem cumpridos: build `npm run build`
 
 Configurar no Supabase hospedado: signup público desabilitado, MFA TOTP habilitado, URL do site e redirect exato `/auth/update-password`, SMTP/limites, migrations revisadas. Usar projetos separados para staging e produção. Nunca importar dados reais para testes.
 
+Para configurar o envio e liberar a edição dos modelos de e-mail, seguir [E-mails de acesso e SMTP](email-smtp.md). O domínio de envio pode ser configurado mantendo o site no endereço atual do Cloudflare Pages.
+
 Esta entrega não publica o aplicativo e não é autorização para uso em produção. O workflow de CI ainda não faz deploy; os gates E2E, pentest autorizado e aprovação de release serão acrescentados antes da primeira publicação.
