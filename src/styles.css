@@ -210,6 +210,14 @@ input[aria-invalid='true'] {
   color: #173a53;
   border-color: #cdd7e0;
 }
+.button-danger-outline {
+  background: white;
+  color: #a52a2a;
+  border-color: #c43b3b;
+}
+.button-danger-outline:hover:not(:disabled) {
+  background: #fff1f1;
+}
 .button-ghost {
   color: #36546a;
   background: transparent;
@@ -447,6 +455,104 @@ textarea {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   font-size: 13px;
+}
+.record-search {
+  margin: 24px 0;
+}
+.record-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr));
+  gap: 16px;
+}
+.record-grid .admin-card {
+  margin: 0;
+}
+.record-grid h2 {
+  margin: 14px 0 8px;
+  font-size: 21px;
+}
+.status-tag {
+  display: inline-block;
+  border-radius: 20px;
+  padding: 4px 10px;
+  background: #e5f1ed;
+  color: #25654d;
+  font-size: 12px;
+  font-weight: 600;
+}
+.status-archived,
+.status-closed {
+  background: #e9edf1;
+  color: #526675;
+}
+.status-suspended {
+  background: #fff1d8;
+  color: #83581a;
+}
+.record-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.record-fields legend {
+  font-weight: 600;
+  margin-bottom: 22px;
+}
+.record-fields label {
+  margin: 0;
+}
+.record-fields .full-row {
+  grid-column: 1 / -1;
+}
+.field-error {
+  display: block;
+  color: #a52a2a;
+  font-size: 13px;
+  margin-top: 6px;
+}
+.field-hint {
+  font-size: 13px;
+  color: #637587;
+  align-self: center;
+}
+.page-count {
+  padding: 10px;
+}
+.new-area {
+  margin-top: 24px;
+  border-top: 1px solid #dfe6ec;
+  padding-top: 20px;
+}
+.new-area form {
+  margin-top: 20px;
+}
+.preserve-lines {
+  white-space: pre-wrap;
+}
+.record-details dd {
+  max-width: 70%;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .record-fields {
+    grid-template-columns: 1fr;
+  }
+  .section-heading {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .record-details dl div {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .record-details dd {
+    max-width: 100%;
+    text-align: left;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   * {

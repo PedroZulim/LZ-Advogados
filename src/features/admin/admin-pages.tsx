@@ -178,7 +178,7 @@ export function UsersPage() {
                 ] as const
               ).map((action) => (
                 <Button
-                  variant="outline"
+                  variant={action === 'remove_member' ? 'dangerOutline' : 'outline'}
                   key={action}
                   disabled={busy}
                   onClick={() => {
@@ -380,6 +380,13 @@ type AuditEvent = {
   request_id: string
 }
 const eventNames: Record<string, string> = {
+  'client.created': 'Cliente cadastrado',
+  'client.updated': 'Cliente atualizado',
+  'client.archived': 'Cliente arquivado',
+  'case.created': 'Processo cadastrado',
+  'case.updated': 'Processo atualizado',
+  'case.archived': 'Processo arquivado',
+  'legal_area.created': 'Área jurídica cadastrada',
   'user.removed': 'Integrante removido',
   'user.invited': 'Convite enviado',
   'user.invite_failed': 'Falha no convite',
@@ -416,8 +423,10 @@ export function AuditPage() {
   return (
     <>
       <span className="eyebrow">ADMINISTRAÇÃO</span>
-      <h1>Auditoria de acessos</h1>
-      <p className="muted">Histórico das operações sobre usuários e sessões do escritório.</p>
+      <h1>Auditoria do escritório</h1>
+      <p className="muted">
+        Histórico das alterações de usuários, sessões, clientes e processos do escritório.
+      </p>
       <div className="admin-form">
         <label>
           Ação
@@ -474,7 +483,7 @@ export function AuditPage() {
           {event.reason && <p>{event.reason}</p>}
           <details>
             <summary>Detalhes da alteração</summary>
-            <p>Usuário ou convite: {event.entity_id}</p>
+            <p>Registro: {event.entity_id}</p>
             <pre>
               {JSON.stringify({ antes: event.before_data, depois: event.after_data }, null, 2)}
             </pre>

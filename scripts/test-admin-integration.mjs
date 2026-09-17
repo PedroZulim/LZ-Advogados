@@ -27,6 +27,9 @@ const cleanupPath = join(tmpdir(), `lz-admin-test-${nonce}.sql`)
 const cleanupSql = `do $$ begin
 delete from private.user_invitations where organization_id in ('${orgs[0]}','${orgs[1]}');
 delete from public.audit_logs where organization_id in ('${orgs[0]}','${orgs[1]}');
+delete from public.cases where organization_id in ('${orgs[0]}','${orgs[1]}');
+delete from public.clients where organization_id in ('${orgs[0]}','${orgs[1]}');
+delete from public.legal_areas where organization_id in ('${orgs[0]}','${orgs[1]}');
 delete from public.profiles where organization_id in ('${orgs[0]}','${orgs[1]}');
 delete from public.organizations where id in ('${orgs[0]}','${orgs[1]}');
 delete from auth.users where email like 'admin-e2e-${nonce}-%@example.test';
@@ -150,6 +153,93 @@ try {
     p_request_id: randomUUID(),
   })
   assert(direct.error, 'Authenticated browser must not execute privileged RPC')
+  // Exercise record RPCs through PostgREST with real JWTs, not a privileged client.
+  const clientFields = {
+    person_type: 'individual',
+    name: 'Cliente de integração',
+    email: '',
+    cpf_cnpj: '',
+    phone: '',
+    address: '',
+    notes: '',
+    responsible_user_id: first.id,
+  }
+  const clientId = ok(await assistant.client.rpc('save_client', { p_data: clientFields }))
+  const clientRow = ok(
+    await assistant.client.from('clients').select('*').eq('id', clientId).single(),
+  )
+  assert.equal(ok(await foreign.client.from('clients').select('id').eq('id', clientId)).length, 0)
+  assert(
+    (await assistant.client.from('clients').update({ name: 'Bypass' }).eq('id', clientId)).error,
+  )
+  const area = ok(await assistant.client.from('legal_areas').select('id').limit(1).single())
+  const caseFields = {
+    client_id: clientId,
+    responsible_user_id: first.id,
+    case_number: 'ADM/2026-15',
+    tribunal: '',
+    court_unit: '',
+    legal_area_id: area.id,
+    client_side: 'claimant',
+    opposing_party: 'Parte fictícia',
+    status: 'active',
+    notes: '',
+  }
+  const caseId = ok(await assistant.client.rpc('save_case', { p_data: caseFields }))
+  const caseRow = ok(await assistant.client.from('cases').select('*').eq('id', caseId).single())
+  assert.equal(caseRow.case_number_normalized, 'ADM202615')
+  assert.equal(ok(await assistant.client.rpc('search_cases', { p_query: 'ADM202615' })).length, 1)
+  assert.equal(ok(await foreign.client.rpc('search_cases', { p_query: 'ADM202615' })).length, 0)
+  assert(
+    (
+      await assistant.client.rpc('archive_record', {
+        p_kind: 'case',
+        p_id: caseId,
+        p_updated_at: caseRow.updated_at,
+        p_reason: 'Negative archive test',
+      })
+    ).error,
+  )
+  ok(
+    await assistant.client.rpc('save_client', {
+      p_data: { ...clientFields, name: 'Cliente atualizado' },
+      p_id: clientId,
+      p_updated_at: clientRow.updated_at,
+    }),
+  )
+  assert(
+    (
+      await assistant.client.rpc('save_client', {
+        p_data: clientFields,
+        p_id: clientId,
+        p_updated_at: clientRow.updated_at,
+      })
+    ).error,
+    'Stale edit rejected',
+  )
+  ok(
+    await lawyer.client.rpc('archive_record', {
+      p_kind: 'case',
+      p_id: caseId,
+      p_updated_at: caseRow.updated_at,
+      p_reason: 'Arquivamento de teste',
+    }),
+  )
+  assert.equal(
+    ok(await assistant.client.rpc('search_cases', { p_query: 'ADM202615', p_status: 'archived' }))
+      .length,
+    1,
+  )
+  const lowAssurance = await fetch(`${url}/rest/v1/rpc/save_client`, {
+    method: 'POST',
+    headers: {
+      apikey: publicKey,
+      authorization: `Bearer ${first.aal1}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ p_data: clientFields }),
+  })
+  assert.equal(lowAssurance.status, 403, 'AAL1 cannot create client')
   await edge(first.token, {
     action: 'invite',
     email: email(6),
@@ -207,6 +297,8 @@ try {
   assert(audit.events.some((e) => e.action === 'user.removed'))
   assert(audit.events.some((e) => e.action === 'user.invited'))
   assert(audit.events.some((e) => e.action === 'user.role_changed'))
+  assert(audit.events.some((e) => e.action === 'client.created'))
+  assert(audit.events.some((e) => e.action === 'case.archived'))
   assert.equal((await edge(foreign.token, { action: 'audit' })).events.length, 0)
   await edge(first.token, { action: 'sessions' })
   // Two independent requests race to demote the final pair of admins.
@@ -231,7 +323,7 @@ try {
   assert.deepEqual(raced.map((r) => r.status).sort(), [200, 409], JSON.stringify(raced))
   assert.equal(raced.find((r) => r.status === 409).body.error, 'last_admin')
   console.log(
-    'PASS: real JWT/MFA, roles, tenant isolation, invite, audit, revocation, refresh token invalidation and concurrent last-admin protection.',
+    'PASS: real JWT/MFA, tenant isolation, client/case CRUD and archive permissions, invite, audit, revocation, refresh token invalidation and concurrent last-admin protection.',
   )
 } finally {
   // Only this run's random tenant IDs and synthetic e-mail prefix are removed.
