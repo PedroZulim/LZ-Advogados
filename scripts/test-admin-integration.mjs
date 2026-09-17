@@ -70,14 +70,12 @@ async function account(n, role, organization) {
     await admin.auth.admin.createUser({ email: email(n), password, email_confirm: true }),
   ).user
   ok(
-    await admin
-      .from('profiles')
-      .insert({
-        id: user.id,
-        organization_id: organization,
-        full_name: `Teste integração ${n}`,
-        role,
-      }),
+    await admin.from('profiles').insert({
+      id: user.id,
+      organization_id: organization,
+      full_name: `Teste integração ${n}`,
+      role,
+    }),
   )
   const client = createClient(url, publicKey, {
     auth: { persistSession: false, autoRefreshToken: false },
