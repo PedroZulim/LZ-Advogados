@@ -27,6 +27,7 @@ export const adminRequest = z.discriminatedUnion('action', [
     .object({ action: z.literal('set_active'), user_id: userId, is_active: z.boolean(), reason })
     .strict(),
   z.object({ action: z.literal('revoke_sessions'), user_id: userId, reason }).strict(),
+  z.object({ action: z.literal('remove_member'), user_id: userId, reason }).strict(),
   z
     .object({
       action: z.literal('revoke_own_sessions'),

@@ -79,6 +79,7 @@ export function createHandler(deps: Dependencies) {
         const code = r.data?.error ?? r.error?.message
         if (code === 'rate_limited') return reply(429, 'rate_limited')
         if (code === 'last_admin') return reply(409, 'last_admin')
+        if (code === 'member_must_be_inactive') return reply(409, 'member_must_be_inactive')
         if (code === 'invite_unavailable') return reply(409, 'invite_unavailable')
         if (code === 'access_denied' || r.error?.code === '42501')
           return reply(403, 'access_denied')

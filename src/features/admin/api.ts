@@ -2,6 +2,8 @@ import { getSupabase } from '@/lib/supabase'
 import type { AdminRequest } from '../../../supabase/functions/_shared/admin-contract'
 
 const messages: Record<string, string> = {
+  member_must_be_inactive:
+    'Desative o integrante antes de removê-lo. Atualize a lista e tente novamente.',
   unauthorized: 'Entre novamente para continuar.',
   access_denied: 'Seu acesso não permite esta operação. Confirme sua sessão e o MFA.',
   last_admin: 'O escritório precisa manter pelo menos um administrador ativo.',

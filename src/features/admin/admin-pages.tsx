@@ -61,7 +61,7 @@ export function UsersPage() {
   const [busy, setBusy] = useState(false)
   const [selection, setSelection] = useState<{
     user: TeamUser
-    action: 'change_role' | 'set_active' | 'revoke_sessions'
+    action: 'change_role' | 'set_active' | 'revoke_sessions' | 'remove_member'
   } | null>(null)
   const [role, setRole] = useState<TeamUser['role']>('assistant')
   const [reason, setReason] = useState('')
@@ -170,7 +170,13 @@ export function UsersPage() {
               <small>Último acesso: {date(user.last_sign_in_at)}</small>
             </div>
             <div className="action-row">
-              {(['change_role', 'set_active', 'revoke_sessions'] as const).map((action) => (
+              {(
+                [
+                  'change_role',
+                  'set_active',
+                  user.is_active ? 'revoke_sessions' : 'remove_member',
+                ] as const
+              ).map((action) => (
                 <Button
                   variant="outline"
                   key={action}
@@ -188,7 +194,9 @@ export function UsersPage() {
                       ? user.is_active
                         ? 'Desativar'
                         : 'Reativar'
-                      : 'Encerrar sessões'}
+                      : action === 'remove_member'
+                        ? 'Remover integrante'
+                        : 'Encerrar sessões'}
                 </Button>
               ))}
             </div>
@@ -204,14 +212,17 @@ export function UsersPage() {
                 ? selection.user.is_active
                   ? 'Desativar acesso'
                   : 'Reativar acesso'
-                : 'Encerrar sessões'}
+                : selection.action === 'remove_member'
+                  ? 'Remover integrante'
+                  : 'Encerrar sessões'}
           </h2>
           <p>
             {selection.user.full_name} — {selection.user.email}
           </p>
           <p className="muted">
-            Alterar o perfil, desativar o acesso ou encerrar sessões exige que a pessoa entre
-            novamente. Desativar bloqueia o acesso aos dados até a reativação.
+            {selection.action === 'remove_member'
+              ? 'O integrante será retirado da equipe e não poderá ser reativado por esta tela. O histórico de auditoria será preservado. Para manter a opção de reativar, cancele e deixe o integrante desativado.'
+              : 'Alterar o perfil, desativar o acesso ou encerrar sessões exige que a pessoa entre novamente. Desativar bloqueia o acesso aos dados até a reativação.'}
           </p>
           <form
             onSubmit={(event) => {
@@ -222,7 +233,7 @@ export function UsersPage() {
                   ? { action: 'change_role', ...common, role }
                   : selection.action === 'set_active'
                     ? { action: 'set_active', ...common, is_active: !selection.user.is_active }
-                    : { action: 'revoke_sessions', ...common },
+                    : { action: selection.action, ...common },
               )
             }}
           >
@@ -369,6 +380,7 @@ type AuditEvent = {
   request_id: string
 }
 const eventNames: Record<string, string> = {
+  'user.removed': 'Integrante removido',
   'user.invited': 'Convite enviado',
   'user.invite_failed': 'Falha no convite',
   'user.role_changed': 'Perfil alterado',
