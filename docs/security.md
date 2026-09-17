@@ -6,7 +6,7 @@ Nunca adicionar `service_role`, chave Resend ou credenciais administrativas a va
 
 Não existe `/register` nem chamada signUp. O Supabase local desabilita signup; repetir essa configuração manualmente no projeto hospedado, pois config.toml não configura automaticamente o Auth remoto.
 
-MFA e identidade ainda exigem validação E2E com GoTrue. Testes PGlite não simulam assinatura JWT e não constituem pentest. A CI contém execução separada de Supabase + pgTAP. As operações privilegiadas via Edge Functions ainda não existem.
+Testes PGlite não simulam assinatura JWT e não constituem pentest. A CI contém execução separada de Supabase + pgTAP e integração da administração com GoTrue, JWTs assinados e MFA real. A Edge Function `admin-users` valida o bearer token e chama um RPC restrito a service-role; o banco revalida o perfil, o MFA e a sessão. Ver [administração de usuários](user-administration.md) para implantação, garantias e limites. O aceite completo no navegador em homologação permanece necessário.
 
 Mensagens de erro de autenticação são genéricas. Mensagens brutas do banco não chegam à UI. A recuperação responde igualmente para contas existentes e inexistentes. Configurar limites de Auth/SMTP e origem permitida no provedor antes de staging.
 

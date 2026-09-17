@@ -44,3 +44,9 @@ max_enrolled_factors = 3
 [auth.mfa.totp]
 enroll_enabled = true
 verify_enabled = true
+
+[functions.admin-users]
+# The handler validates the bearer token with Auth and getClaims, supporting
+# both legacy and asymmetric project signing keys. A project API key is not a user.
+verify_jwt = false
+import_map = "./functions/deno.json"
