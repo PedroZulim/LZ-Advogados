@@ -5,6 +5,8 @@ const userId = z.uuid()
 const reason = z.string().trim().min(3).max(500)
 export const adminRequest = z.discriminatedUnion('action', [
   z.object({ action: z.literal('list') }).strict(),
+  z.object({ action: z.literal('list_removed') }).strict(),
+  z.object({ action: z.literal('readmit_member'), user_id: userId, role, reason }).strict(),
   z.object({ action: z.literal('sessions') }).strict(),
   z
     .object({

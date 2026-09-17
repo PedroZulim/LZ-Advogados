@@ -51,9 +51,11 @@ export function UsersPage() {
   const { profile, refresh } = useAuth()
   const cache = useQueryClient()
   const allowed = profile?.role === 'admin'
+  const [showRemoved, setShowRemoved] = useState(false)
   const users = useQuery({
-    queryKey: ['admin-users'],
-    queryFn: () => administration<{ users: TeamUser[] }>({ action: 'list' }),
+    queryKey: ['admin-users', showRemoved ? 'removed' : 'current'],
+    queryFn: () =>
+      administration<{ users: TeamUser[] }>({ action: showRemoved ? 'list_removed' : 'list' }),
     enabled: allowed,
     retry: false,
   })
@@ -61,7 +63,7 @@ export function UsersPage() {
   const [busy, setBusy] = useState(false)
   const [selection, setSelection] = useState<{
     user: TeamUser
-    action: 'change_role' | 'set_active' | 'revoke_sessions' | 'remove_member'
+    action: 'change_role' | 'set_active' | 'revoke_sessions' | 'remove_member' | 'readmit_member'
   } | null>(null)
   const [role, setRole] = useState<TeamUser['role']>('assistant')
   const [reason, setReason] = useState('')
@@ -73,7 +75,9 @@ export function UsersPage() {
       setMessage(
         request.action === 'invite'
           ? 'Convite enviado. A pessoa deverá definir a senha e configurar o autenticador.'
-          : 'Alteração concluída.',
+          : request.action === 'readmit_member'
+            ? 'Integrante readmitido. A pessoa deve entrar novamente com senha e MFA. Se precisar, use Recuperar acesso para definir uma nova senha.'
+            : 'Alteração concluída.',
       )
       setSelection(null)
       setReason('')
@@ -152,6 +156,23 @@ export function UsersPage() {
         </Button>
       </div>
       <div className="team-list">
+        <div className="action-row">
+          <Button
+            variant={showRemoved ? 'outline' : 'default'}
+            onClick={() => setShowRemoved(false)}
+          >
+            Equipe atual
+          </Button>
+          <Button
+            variant={showRemoved ? 'default' : 'outline'}
+            onClick={() => setShowRemoved(true)}
+          >
+            Integrantes removidos
+          </Button>
+        </div>
+        {users.data?.users.length === 0 && (
+          <p>{showRemoved ? 'Nenhum integrante removido.' : 'Nenhum integrante encontrado.'}</p>
+        )}
         {users.data?.users.map((user) => (
           <article className="admin-card member-card" key={user.id}>
             <div>
@@ -161,21 +182,24 @@ export function UsersPage() {
               <p>{user.email}</p>
               <p className="muted">
                 {roleNames[user.role]} ·{' '}
-                {user.is_active
-                  ? user.email_confirmed_at
-                    ? 'Ativo'
-                    : 'Convite pendente'
-                  : 'Desativado'}
+                {user.removed_at
+                  ? `Removido em ${date(user.removed_at)}`
+                  : user.is_active
+                    ? user.email_confirmed_at
+                      ? 'Ativo'
+                      : 'Convite pendente'
+                    : 'Desativado'}
               </p>
               <small>Último acesso: {date(user.last_sign_in_at)}</small>
             </div>
             <div className="action-row">
-              {(
-                [
-                  'change_role',
-                  'set_active',
-                  user.is_active ? 'revoke_sessions' : 'remove_member',
-                ] as const
+              {(user.removed_at
+                ? (['readmit_member'] as const)
+                : ([
+                    'change_role',
+                    'set_active',
+                    user.is_active ? 'revoke_sessions' : 'remove_member',
+                  ] as const)
               ).map((action) => (
                 <Button
                   variant={action === 'remove_member' ? 'dangerOutline' : 'outline'}
@@ -183,20 +207,22 @@ export function UsersPage() {
                   disabled={busy}
                   onClick={() => {
                     setSelection({ user, action })
-                    setRole(user.role)
+                    setRole(action === 'readmit_member' ? 'assistant' : user.role)
                     setReason('')
                     setMessage('')
                   }}
                 >
-                  {action === 'change_role'
-                    ? 'Alterar perfil'
-                    : action === 'set_active'
-                      ? user.is_active
-                        ? 'Desativar'
-                        : 'Reativar'
-                      : action === 'remove_member'
-                        ? 'Remover integrante'
-                        : 'Encerrar sessões'}
+                  {action === 'readmit_member'
+                    ? 'Readmitir integrante'
+                    : action === 'change_role'
+                      ? 'Alterar perfil'
+                      : action === 'set_active'
+                        ? user.is_active
+                          ? 'Desativar'
+                          : 'Reativar'
+                        : action === 'remove_member'
+                          ? 'Remover integrante'
+                          : 'Encerrar sessões'}
                 </Button>
               ))}
             </div>
@@ -206,38 +232,42 @@ export function UsersPage() {
       {selection && (
         <ActionDialog busy={busy} close={() => setSelection(null)}>
           <h2 id="action-title">
-            {selection.action === 'change_role'
-              ? 'Alterar perfil'
-              : selection.action === 'set_active'
-                ? selection.user.is_active
-                  ? 'Desativar acesso'
-                  : 'Reativar acesso'
-                : selection.action === 'remove_member'
-                  ? 'Remover integrante'
-                  : 'Encerrar sessões'}
+            {selection.action === 'readmit_member'
+              ? 'Readmitir integrante'
+              : selection.action === 'change_role'
+                ? 'Alterar perfil'
+                : selection.action === 'set_active'
+                  ? selection.user.is_active
+                    ? 'Desativar acesso'
+                    : 'Reativar acesso'
+                  : selection.action === 'remove_member'
+                    ? 'Remover integrante'
+                    : 'Encerrar sessões'}
           </h2>
           <p>
             {selection.user.full_name} — {selection.user.email}
           </p>
           <p className="muted">
-            {selection.action === 'remove_member'
-              ? 'O integrante será retirado da equipe e não poderá ser reativado por esta tela. O histórico de auditoria será preservado. Para manter a opção de reativar, cancele e deixe o integrante desativado.'
-              : 'Alterar o perfil, desativar o acesso ou encerrar sessões exige que a pessoa entre novamente. Desativar bloqueia o acesso aos dados até a reativação.'}
+            {selection.action === 'readmit_member'
+              ? 'A conta existente voltará à equipe com o perfil escolhido abaixo. O histórico será preservado e todas as sessões anteriores serão encerradas. Não será enviado um e-mail automaticamente. A pessoa deve entrar novamente ou solicitar recuperação de acesso.'
+              : selection.action === 'remove_member'
+                ? 'O integrante será retirado da equipe e perderá o acesso. O histórico será preservado. Se voltar ao escritório, use Integrantes removidos para readmiti-lo.'
+                : 'Alterar o perfil, desativar o acesso ou encerrar sessões exige que a pessoa entre novamente. Desativar bloqueia o acesso aos dados até a reativação.'}
           </p>
           <form
             onSubmit={(event) => {
               event.preventDefault()
               const common = { user_id: selection.user.id, reason }
               void run(
-                selection.action === 'change_role'
-                  ? { action: 'change_role', ...common, role }
+                selection.action === 'change_role' || selection.action === 'readmit_member'
+                  ? { action: selection.action, ...common, role }
                   : selection.action === 'set_active'
                     ? { action: 'set_active', ...common, is_active: !selection.user.is_active }
                     : { action: selection.action, ...common },
               )
             }}
           >
-            {selection.action === 'change_role' && (
+            {(selection.action === 'change_role' || selection.action === 'readmit_member') && (
               <label>
                 Novo perfil
                 <select
@@ -380,6 +410,7 @@ type AuditEvent = {
   request_id: string
 }
 const eventNames: Record<string, string> = {
+  'user.readmitted': 'Integrante readmitido',
   'client.created': 'Cliente cadastrado',
   'client.updated': 'Cliente atualizado',
   'client.archived': 'Cliente arquivado',

@@ -33,6 +33,7 @@ export async function administration<T>(request: AdminRequest): Promise<T> {
   return data as T
 }
 export type TeamUser = {
+  removed_at?: string | null
   id: string
   full_name: string
   email: string

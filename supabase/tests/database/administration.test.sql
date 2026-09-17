@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(25);
 
 insert into public.organizations(id, name) values
  ('71000000-0000-4000-8000-000000000001', 'Admin test Alpha'),
@@ -49,5 +49,15 @@ select throws_ok($$delete from public.audit_logs$$, '42501', 'permission denied 
 select set_config('request.jwt.claims','{"sub":"72000000-0000-4000-8000-000000000003","session_id":"73000000-0000-4000-8000-000000000003","aal":"aal2"}',true);
 select is((select count(*)::int from public.audit_logs),0,'Foreign audit is hidden');
 reset role;
+select lives_ok($$select pg_temp.op(1,'set_active','{"user_id":"72000000-0000-4000-8000-000000000002","is_active":false,"reason":"Departure"}')$$, 'Deactivate before removal');
+select lives_ok($$select pg_temp.op(1,'remove_member','{"user_id":"72000000-0000-4000-8000-000000000002","reason":"Departure"}')$$, 'Remove former member');
+select is(jsonb_array_length(pg_temp.op(1,'list_removed')->'users'), 1, 'Removed member visible to own admin');
+select throws_ok($$select pg_temp.op(3,'readmit_member','{"user_id":"72000000-0000-4000-8000-000000000002","role":"lawyer","reason":"Return"}')$$, '42501', 'access_denied', 'Foreign admin cannot readmit');
+insert into auth.sessions(id,user_id) values ('73000000-0000-4000-8000-000000000002','72000000-0000-4000-8000-000000000002');
+select lives_ok($$select pg_temp.op(1,'readmit_member','{"user_id":"72000000-0000-4000-8000-000000000002","role":"lawyer","reason":"Return"}')$$, 'Readmit existing identity');
+select ok((select is_active and removed_at is null and role='lawyer' from public.profiles where id='72000000-0000-4000-8000-000000000002'), 'Readmission applies chosen role');
+select is((select count(*)::int from auth.sessions where user_id='72000000-0000-4000-8000-000000000002'),0,'Sessions created while removed are revoked');
+select is((select count(*)::int from public.audit_logs where entity_id='72000000-0000-4000-8000-000000000002' and action='user.readmitted' and reason='Return'),1,'Readmission audited');
+select is(jsonb_array_length(pg_temp.op(1,'list_removed')->'users'), 0, 'Readmitted member leaves removed list');
 select * from finish();
 rollback;

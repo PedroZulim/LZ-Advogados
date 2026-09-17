@@ -250,6 +250,34 @@ try {
     (u) => u.email === email(6),
   )
   assert(invited, 'Invited user profile must be present')
+  // A recovery link must work even if an invitation was never accepted.
+  const recoveryClient = createClient(url, publicKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+  ok(
+    await recoveryClient.auth.resetPasswordForEmail(email(6), {
+      redirectTo: 'http://127.0.0.1:5173/auth/update-password',
+    }),
+  )
+  const recoveryLink = ok(
+    await admin.auth.admin.generateLink({ type: 'recovery', email: email(6) }),
+  )
+  ok(
+    await recoveryClient.auth.verifyOtp({
+      token_hash: recoveryLink.properties.hashed_token,
+      type: 'recovery',
+    }),
+  )
+  ok(await recoveryClient.auth.updateUser({ password: randomBytes(24).toString('base64url') }))
+  assert(
+    (
+      await recoveryClient.auth.verifyOtp({
+        token_hash: recoveryLink.properties.hashed_token,
+        type: 'recovery',
+      })
+    ).error,
+    'Used link rejected',
+  )
   await edge(
     first.token,
     { action: 'invite', email: email(4), full_name: 'Foreign identity', role: 'admin' },
@@ -295,6 +323,29 @@ try {
   )
   const audit = await edge(first.token, { action: 'audit' })
   assert(audit.events.some((e) => e.action === 'user.removed'))
+  assert(
+    (await edge(first.token, { action: 'list_removed' })).users.some(
+      (user) => user.id === assistant.id,
+    ),
+  )
+  await edge(
+    foreign.token,
+    { action: 'readmit_member', user_id: assistant.id, role: 'lawyer', reason: 'Foreign tenant' },
+    403,
+  )
+  await edge(first.token, {
+    action: 'readmit_member',
+    user_id: assistant.id,
+    role: 'lawyer',
+    reason: 'Recontratação de teste',
+  })
+  const readmitted = (await edge(first.token, { action: 'list' })).users.find(
+    (user) => user.id === assistant.id,
+  )
+  assert.equal(readmitted.role, 'lawyer')
+  assert.equal(readmitted.is_active, true)
+  assert.equal((await edge(first.token, { action: 'list_removed' })).users.length, 0)
+  await edge(assistant.token, { action: 'sessions' }, 401)
   assert(audit.events.some((e) => e.action === 'user.invited'))
   assert(audit.events.some((e) => e.action === 'user.role_changed'))
   assert(audit.events.some((e) => e.action === 'client.created'))
