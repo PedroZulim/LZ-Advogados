@@ -2,7 +2,7 @@
 
 Plataforma jurídica interna baseada na [SPEC](<SPEC — Plataforma Jurídica PWA _ MVP.md>).
 
-**Estado: identidade e administração de usuários implementadas; validação de homologação em andamento.** Inclui login/MFA, convites, gestão de perfis e sessões, auditoria e isolamento multi-tenant no PostgreSQL. Clientes, processos, agenda e prazos ainda não estão implementados. Não é um MVP concluído.
+**Estado: identidade, administração de usuários, clientes e processos implementados; validação de homologação em andamento.** Inclui login/MFA, convites, gestão de perfis e sessões, cadastro e arquivamento de clientes/processos, áreas jurídicas, buscas e auditoria com isolamento multi-tenant. Agenda e prazos ainda não estão implementados. Não é um MVP concluído.
 
 ## Executar
 
@@ -32,6 +32,7 @@ O primeiro comando inclui testes SQL em PostgreSQL embarcado. O segundo valida a
 - [Análise da SPEC, decisões e próximos passos](docs/implementation.md)
 - [Arquitetura](docs/architecture.md)
 - [Administração de usuários: implantação e testes](docs/user-administration.md)
+- [Clientes e processos: implantação e aceite](docs/clients-cases.md)
 - [Segurança](docs/security.md)
 - [Backup e restore](docs/backup-restore.md)
 

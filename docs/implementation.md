@@ -33,6 +33,8 @@ Validação desta etapa: 51 testes unitários/PostgreSQL embarcado, 27 testes pg
 
 ### Decisões e pontos a fechar
 
+Atualização de 17/09/2026: fase 2 implementada com clientes, áreas jurídicas, processos, busca paginada, arquivamento e auditoria. Banco e API foram testados localmente com Auth/MFA reais. A validação visual em homologação e a publicação desta etapa permanecem pendentes. Ver [clientes e processos](clients-cases.md). Após o aceite dessa fase, o próximo módulo é agenda; a regra de cancelamento por assistentes ainda precisa ser definida.
+
 - Uma associação por usuário no MVP: `profiles.id = auth.users.id`, com `organization_id` obrigatório. Múltiplos escritórios existem no banco; alternância de organizações pelo mesmo usuário não está no escopo inicial.
 - Papel e organização vêm do perfil persistido, nunca de user_metadata ou campos enviados pela interface.
 - Sessão fica apenas em memória nesta etapa. Atualizar a página exige entrar novamente. Persistência segura e experiência PWA serão tratadas na fase 7; nenhum dado jurídico é armazenado offline agora.

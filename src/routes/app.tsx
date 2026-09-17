@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { useState, type ReactNode } from 'react'
 import { UsersPage, SessionsPage, AuditPage } from '@/features/admin/admin-pages'
+import { RecordList, RecordPage } from '@/features/records/record-pages'
 
 function Workspace({ children }: { children?: ReactNode }) {
   const { state, profile, signOut, refresh } = useAuth()
@@ -66,6 +67,8 @@ function Workspace({ children }: { children?: ReactNode }) {
       </header>
       <nav className="workspace-nav" aria-label="Navegação principal">
         <Link to="/dashboard">Início</Link>
+        <Link to="/clients">Clientes</Link>
+        <Link to="/cases">Processos</Link>
         <Link to="/account/sessions">Minhas sessões</Link>
         {profile?.role === 'admin' && (
           <>
@@ -105,8 +108,8 @@ function Workspace({ children }: { children?: ReactNode }) {
               </dl>
             </section>
             <p className="muted">
-              Agenda, clientes, processos e prazos serão disponibilizados nas próximas etapas de
-              implantação.
+              Acesse Clientes e Processos pelo menu para organizar os cadastros do escritório.
+              Agenda e prazos serão disponibilizados nas próximas etapas.
             </p>
             <p role="status">{error}</p>
           </>
@@ -125,6 +128,54 @@ export function App() {
           <Route path="/auth/recovery" element={<RecoveryPage />} />
           <Route path="/auth/update-password" element={<PasswordPage />} />
           <Route path="/dashboard" element={<Workspace />} />
+          <Route
+            path="/clients"
+            element={
+              <Workspace>
+                <RecordList kind="client" />
+              </Workspace>
+            }
+          />
+          <Route
+            path="/clients/new"
+            element={
+              <Workspace>
+                <RecordPage key="new-client" kind="client" creating />
+              </Workspace>
+            }
+          />
+          <Route
+            path="/clients/:id"
+            element={
+              <Workspace>
+                <RecordPage kind="client" />
+              </Workspace>
+            }
+          />
+          <Route
+            path="/cases"
+            element={
+              <Workspace>
+                <RecordList kind="case" />
+              </Workspace>
+            }
+          />
+          <Route
+            path="/cases/new"
+            element={
+              <Workspace>
+                <RecordPage key="new-case" kind="case" creating />
+              </Workspace>
+            }
+          />
+          <Route
+            path="/cases/:id"
+            element={
+              <Workspace>
+                <RecordPage kind="case" />
+              </Workspace>
+            }
+          />
           <Route
             path="/admin/users"
             element={
