@@ -6,9 +6,9 @@ React/Vite serve a interface em português. Supabase Auth fornece sessão e MFA 
 
 Somente o processo administrativo confiável usa service-role. O browser recebe URL e chave publicável/anon. Membership é persistido pelo bootstrap, não por trigger de cadastro que confie em metadata. Usuário Auth sem perfil não recebe acesso.
 
-Não há service worker nem persistência de queries. O cache do TanStack Query é em memória e limpo em mudanças de autenticação. Centralização de timezone: `src/lib/config.ts` e constraint no banco. Timestamps técnicos são timestamptz.
+O Service Worker da PWA pré-cacheia somente a shell e os assets estáticos gerados pelo build; não há cache de queries, chamadas Supabase ou dados jurídicos. O cache do TanStack Query é em memória e limpo em mudanças de autenticação. Centralização de timezone: `src/lib/config.ts` e constraint no banco. Timestamps técnicos são timestamptz.
 
-As versões exatas ficam em package-lock.json. FullCalendar, date-fns e vite-plugin-pwa serão adicionados nas fases que os utilizam.
+As versões exatas ficam em package-lock.json. FullCalendar e date-fns serão adicionados nas fases que os utilizam. A configuração da PWA está em `vite.config.ts`; veja [PWA](pwa.md).
 
 Referências oficiais consultadas para esta implementação:
 

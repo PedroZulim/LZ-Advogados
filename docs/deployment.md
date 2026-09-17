@@ -12,7 +12,7 @@ Para o administrador inicial, copiar `.env.admin.example` para `.env.admin`, con
 
 Validação: `npm run check` executa lint, typecheck, testes PGlite/unitários e build. Com Supabase local ativo, `npx supabase test db` executa pgTAP contra o schema real. Validar manualmente login, convite, recovery, QR e código TOTP antes de encerrar fase 1.
 
-Cloudflare Pages, quando os gates da SPEC forem cumpridos: build `npm run build`, saída `dist`. Configurar apenas VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY para o ambiente correspondente. `_redirects` trata rotas SPA; `_headers` aplica CSP e no-store. Ajustar connect-src se Supabase usar domínio customizado. A configuração de headers não é aplicada pelo servidor Vite local.
+Cloudflare Pages, quando os gates da SPEC forem cumpridos: build `npm run build`, saída `dist`. O build também publica `manifest.webmanifest`, `sw.js`, Workbox e os ícones em `public/`. Configurar apenas VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY para o ambiente correspondente. `_redirects` trata rotas SPA; `_headers` aplica CSP e no-store. Ajustar connect-src se Supabase usar domínio customizado. A configuração de headers não é aplicada pelo servidor Vite local. Consulte [PWA](pwa.md) para instalação e validação.
 
 Configurar no Supabase hospedado: signup público desabilitado, MFA TOTP habilitado, URL do site e redirect exato `/auth/update-password`, SMTP/limites, migrations revisadas. Usar projetos separados para staging e produção. Nunca importar dados reais para testes.
 
