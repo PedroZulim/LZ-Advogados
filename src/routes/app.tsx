@@ -158,10 +158,7 @@ export function App() {
               </Workspace>
             }
           />
-          <Route
-            path="/calendar"
-            element={<Navigate to="/dashboard" replace />}
-          />
+          <Route path="/calendar" element={<Navigate to="/dashboard" replace />} />
           <Route
             path="/events/new"
             element={
