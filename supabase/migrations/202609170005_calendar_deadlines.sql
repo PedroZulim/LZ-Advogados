@@ -227,10 +227,16 @@ begin
  if p_action='complete' and old.status not in ('pending','in_progress','overdue') then raise exception 'invalid_transition'; end if;
  if p_action='reopen' and old.status <> 'completed' then raise exception 'invalid_transition'; end if;
  if p_action='cancel' and old.status in ('completed','cancelled') then raise exception 'invalid_transition'; end if;
- next_status:=case p_action when 'complete' then 'completed' when 'reopen' then 'pending' when 'cancel' then 'cancelled' else '' end;
+ if p_action='cancel' then
+  insert into public.audit_logs(organization_id,actor_user_id,action,entity_type,entity_id,before_data,after_data,reason,request_id)
+  values(org,auth.uid(),'deadline.deleted','deadline',p_id,to_jsonb(old),null,trim(p_reason),gen_random_uuid());
+  delete from public.deadlines where id=p_id;
+  return;
+ end if;
+ next_status:=case p_action when 'complete' then 'completed' when 'reopen' then 'pending' else '' end;
  if next_status='' then raise exception 'invalid_transition'; end if;
  update public.deadlines set status=next_status,completion_note=case when p_action='complete' then nullif(trim(p_note),'') else completion_note end,completed_at=case when p_action='complete' then clock_timestamp() else null end,completed_by=case when p_action='complete' then auth.uid() else null end,cancelled_at=case when p_action='cancel' then clock_timestamp() else null end,cancelled_by=case when p_action='cancel' then auth.uid() else null end,updated_at=clock_timestamp() where id=p_id;
- insert into public.audit_logs(organization_id,actor_user_id,action,entity_type,entity_id,before_data,after_data,reason,request_id) values(org,auth.uid(),'deadline.'||case p_action when 'complete' then 'completed' when 'reopen' then 'reopened' else 'cancelled' end,'deadline',p_id,to_jsonb(old),jsonb_build_object('status',next_status),nullif(trim(p_reason),''),gen_random_uuid());
+ insert into public.audit_logs(organization_id,actor_user_id,action,entity_type,entity_id,before_data,after_data,reason,request_id) values(org,auth.uid(),'deadline.'||case p_action when 'complete' then 'completed' else 'reopened' end,'deadline',p_id,to_jsonb(old),jsonb_build_object('status',next_status),nullif(trim(p_reason),''),gen_random_uuid());
 end $$;
 
 create function public.mark_overdue_deadlines()

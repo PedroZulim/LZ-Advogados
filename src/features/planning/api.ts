@@ -130,14 +130,26 @@ export async function getParticipantIds(kind: 'event' | 'deadline', id: string) 
   if (error) throw planningError(error)
   return data.map((row) => row.user_id as string)
 }
-export async function listDeadlines(status = '') {
+export async function listDeadlines(status = '', search = '') {
   const { error: overdueError } = await getSupabase().rpc('mark_overdue_deadlines')
   if (overdueError) throw planningError(overdueError)
   let query = getSupabase().from('deadlines').select('*').order('due_date').order('due_time')
   if (status) query = query.eq('status', status)
   const { data, error } = await query
   if (error) throw planningError(error)
-  return data as DeadlineRecord[]
+  const records = data as DeadlineRecord[]
+  const term = search.trim().toLocaleLowerCase('pt-BR')
+  if (!term) return records
+  const { data: cases, error: casesError } = await getSupabase()
+    .from('cases')
+    .select('id,case_number')
+  if (casesError) throw planningError(casesError)
+  const caseNumbers = new Map(cases.map((item) => [item.id as string, item.case_number as string]))
+  return records.filter((item) =>
+    [item.title, item.description, caseNumbers.get(item.case_id), item.due_date, item.priority]
+      .filter(Boolean)
+      .some((value) => value!.toLocaleLowerCase('pt-BR').includes(term)),
+  )
 }
 export async function getDeadline(id: string) {
   const { data, error } = await getSupabase()

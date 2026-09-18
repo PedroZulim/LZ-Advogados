@@ -1,5 +1,5 @@
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
-import { Scale, ShieldCheck, LogOut } from 'lucide-react'
+import { Scale, LogOut } from 'lucide-react'
 import { AuthProvider, useAuth } from '@/features/auth/auth-provider'
 import {
   AuthLayout,
@@ -92,30 +92,7 @@ function Workspace({ children }: { children?: ReactNode }) {
             <span className="eyebrow">ESPAÇO DO ESCRITÓRIO</span>
             <h1>Olá, {profile?.full_name.split(' ')[0]}.</h1>
             <p className="muted">Seu acesso foi confirmado.</p>
-            <section className="foundation-card">
-              <ShieldCheck size={28} />
-              <h2>Conta protegida</h2>
-              <p>
-                Você está conectado com verificação em duas etapas e vínculo ativo com seu
-                escritório.
-              </p>
-              <dl>
-                <div>
-                  <dt>Nome</dt>
-                  <dd>{profile?.full_name}</dd>
-                </div>
-                <div>
-                  <dt>Perfil</dt>
-                  <dd>
-                    {
-                      { admin: 'Administrador', lawyer: 'Advogado', assistant: 'Assistente' }[
-                        profile!.role
-                      ]
-                    }
-                  </dd>
-                </div>
-              </dl>
-            </section>
+            <CalendarPage />
             <DashboardPlanning />
             <p role="status">{error}</p>
           </>
