@@ -33,14 +33,14 @@ Validação desta etapa: 51 testes unitários/PostgreSQL embarcado, 27 testes pg
 
 ### Decisões e pontos a fechar
 
-Atualização de 17/09/2026: fase 2 implementada com clientes, áreas jurídicas, processos, busca paginada, arquivamento e auditoria. Banco e API foram testados localmente com Auth/MFA reais. A validação visual em homologação e a publicação desta etapa permanecem pendentes. Ver [clientes e processos](clients-cases.md). Após o aceite dessa fase, o próximo módulo é agenda; a regra de cancelamento por assistentes ainda precisa ser definida.
+Atualização de 18/09/2026: fases 2, 3 e 4 implementadas com clientes, processos, eventos de agenda, participantes, recorrência básica e prazos com prioridades, vencimento, conclusão, reabertura, cancelamento, justificativas e auditoria. Banco, API e build foram testados localmente com Auth/MFA reais. A validação visual em homologação e a publicação desta etapa permanecem pendentes. Ver [clientes e processos](clients-cases.md) e as rotas `/calendar` e `/deadlines`.
 
 - Uma associação por usuário no MVP: `profiles.id = auth.users.id`, com `organization_id` obrigatório. Múltiplos escritórios existem no banco; alternância de organizações pelo mesmo usuário não está no escopo inicial.
 - Papel e organização vêm do perfil persistido, nunca de user_metadata ou campos enviados pela interface.
 - Sessão fica apenas em memória nesta etapa. Atualizar a página exige entrar novamente. Persistência segura e experiência PWA serão tratadas na fase 7; nenhum dado jurídico é armazenado offline agora.
 - Timeout de 15 minutos de inatividade foi escolhido como padrão inicial de bloqueio visual. Não equivale a garantia de timeout server-side. A checagem de sessão no banco atende revogação explícita.
 - `overdue` na SPEC mistura estado persistido e condição temporal. Antes da fase 4, definir estado efetivo por `due_at`, mantendo estado operacional e cron consistentes. Sem horário informado, propor fim do dia em São Paulo e documentar a decisão antes da implementação.
-- Cancelamento de evento por assistente está descrito como “conforme regra”. Definir regra antes da fase 3.
+- Cancelamento de evento é permitido ao administrador, advogado ou responsável principal; assistentes não responsáveis não podem cancelar.
 - Cache offline ainda precisa de projeção explícita: títulos livres também podem conter dados pessoais. Não basta remover CPF/CNPJ de um objeto completo.
 - Chave dedupe de lembrete deve considerar a revisão da data fatal, evitando que lembretes antigos suprimam os novos após reagendamento.
 - Tema claro nesta etapa; dark/system, agenda, auditoria, Resend e busca permanecem no backlog da SPEC. A shell instalável da PWA está configurada; a projeção segura de dados jurídicos offline continua pendente e não foi ampliada nesta etapa.

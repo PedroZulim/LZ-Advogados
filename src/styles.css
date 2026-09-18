@@ -608,6 +608,131 @@ textarea {
   color: #637587;
   align-self: center;
 }
+.calendar-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 24px 0;
+}
+.calendar-toolbar label {
+  margin: 0;
+  min-width: 180px;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+.calendar-day {
+  min-height: 120px;
+  padding: 10px;
+  border: 1px solid #dfe6ec;
+  border-radius: 8px;
+  background: #fff;
+}
+.calendar-day.today {
+  border-color: #4e7896;
+  box-shadow: inset 0 3px #4e7896;
+}
+.calendar-item {
+  display: block;
+  margin-top: 8px;
+  padding: 5px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.event-item {
+  background: #eaf1f6;
+}
+.deadline-item {
+  background: #fff1d8;
+  color: #83581a;
+}
+.planning-list {
+  padding: 0;
+  overflow: hidden;
+}
+.planning-row {
+  display: grid;
+  grid-template-columns: 150px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e8edf1;
+}
+.planning-row:last-child {
+  border-bottom: 0;
+}
+.planning-row span,
+.planning-row small {
+  color: #637587;
+}
+.planning-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+.planning-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #dfe6ec;
+  border-radius: 10px;
+}
+.planning-summary strong {
+  font-size: 28px;
+  color: #173a53;
+}
+.planning-summary span {
+  color: #637587;
+  font-size: 14px;
+}
+.priority {
+  font-size: 13px;
+  font-weight: 600;
+}
+.priority-urgent {
+  color: #a52a2a;
+}
+.priority-high {
+  color: #a0641a;
+}
+.status-overdue {
+  background: #ffe1e1;
+  color: #a52a2a;
+}
+.participant-picker {
+  grid-column: 1 / -1;
+  border: 1px solid #dfe6ec;
+  padding: 14px;
+  border-radius: 7px;
+}
+.participant-picker legend {
+  font-weight: 600;
+}
+.participant-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+}
+.participant-grid label {
+  margin: 0;
+  font-weight: 400;
+}
+.participant-grid input,
+.checkbox-field input {
+  display: inline-block;
+  width: auto;
+  min-height: auto;
+}
+.action-panel {
+  max-width: 650px;
+}
 .page-count {
   padding: 10px;
 }
@@ -642,6 +767,23 @@ textarea {
   .record-details dd {
     max-width: 100%;
     text-align: left;
+  }
+  .calendar-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .calendar-grid {
+    grid-template-columns: 1fr;
+  }
+  .calendar-day {
+    min-height: auto;
+  }
+  .planning-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .planning-summary {
+    grid-template-columns: 1fr;
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -12,6 +12,13 @@ import { Button } from '@/components/ui/button'
 import { useState, type ReactNode } from 'react'
 import { UsersPage, SessionsPage, AuditPage } from '@/features/admin/admin-pages'
 import { RecordList, RecordPage } from '@/features/records/record-pages'
+import {
+  CalendarPage,
+  DeadlineList,
+  DeadlinePage,
+  DashboardPlanning,
+  EventPage,
+} from '@/features/planning/planning-pages'
 
 function Workspace({ children }: { children?: ReactNode }) {
   const { state, profile, signOut, refresh } = useAuth()
@@ -69,6 +76,8 @@ function Workspace({ children }: { children?: ReactNode }) {
         <Link to="/dashboard">Início</Link>
         <Link to="/clients">Clientes</Link>
         <Link to="/cases">Processos</Link>
+        <Link to="/calendar">Agenda</Link>
+        <Link to="/deadlines">Prazos</Link>
         <Link to="/account/sessions">Minhas sessões</Link>
         {profile?.role === 'admin' && (
           <>
@@ -107,10 +116,7 @@ function Workspace({ children }: { children?: ReactNode }) {
                 </div>
               </dl>
             </section>
-            <p className="muted">
-              Acesse Clientes e Processos pelo menu para organizar os cadastros do escritório.
-              Agenda e prazos serão disponibilizados nas próximas etapas.
-            </p>
+            <DashboardPlanning />
             <p role="status">{error}</p>
           </>
         )}
@@ -173,6 +179,54 @@ export function App() {
             element={
               <Workspace>
                 <RecordPage kind="case" />
+              </Workspace>
+            }
+          />
+          <Route
+            path="/calendar"
+            element={
+              <Workspace>
+                <CalendarPage />
+              </Workspace>
+            }
+          />
+          <Route
+            path="/events/new"
+            element={
+              <Workspace>
+                <EventPage creating />
+              </Workspace>
+            }
+          />
+          <Route
+            path="/events/:id"
+            element={
+              <Workspace>
+                <EventPage />
+              </Workspace>
+            }
+          />
+          <Route
+            path="/deadlines"
+            element={
+              <Workspace>
+                <DeadlineList />
+              </Workspace>
+            }
+          />
+          <Route
+            path="/deadlines/new"
+            element={
+              <Workspace>
+                <DeadlinePage creating />
+              </Workspace>
+            }
+          />
+          <Route
+            path="/deadlines/:id"
+            element={
+              <Workspace>
+                <DeadlinePage />
               </Workspace>
             }
           />

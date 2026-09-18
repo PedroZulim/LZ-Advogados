@@ -58,7 +58,7 @@ async function saveCase(data: object, id: string | null = null, stamp: string | 
     ])
   ).rows[0].id
 }
-async function stamp(table: 'clients' | 'cases', id: string) {
+async function stamp(table: 'clients' | 'cases' | 'events' | 'deadlines', id: string) {
   return (
     await db.query<{ stamp: string }>(
       `select updated_at::text as stamp from public.${table} where id=$1`,
@@ -374,5 +374,163 @@ describe('Clients and cases database boundaries', { concurrent: false }, () => {
     await db.exec('reset role; set role anon')
     await expect(db.query('select * from public.clients')).rejects.toThrow('permission denied')
     await expect(saveClient()).rejects.toThrow('permission denied')
+  })
+  it('creates tenant-scoped events and deadlines with participants', async () => {
+    const client = await saveClient()
+    const data = await caseData(client)
+    const caseId = await saveCase(data)
+    const start = new Date(Date.now() + 86400000).toISOString()
+    const event = (
+      await db.query<{ id: string }>('select public.save_event($1) as id', [
+        JSON.stringify({
+          title: 'Audiência de teste',
+          event_type: 'hearing',
+          owner_user_id: uid(),
+          client_id: client,
+          case_id: caseId,
+          starts_at: start,
+          ends_at: null,
+          all_day: false,
+          recurrence_type: 'none',
+          recurrence_until: null,
+          participant_ids: [uid(2)],
+        }),
+      ])
+    ).rows[0].id
+    expect(
+      (await db.query('select * from public.event_participants where event_id=$1', [event])).rows,
+    ).toHaveLength(1)
+    const deadline = (
+      await db.query<{ id: string }>('select public.save_deadline($1) as id', [
+        JSON.stringify({
+          title: 'Prazo de teste',
+          description: '',
+          case_id: caseId,
+          start_date: '2020-09-18',
+          due_date: '2020-09-25',
+          due_time: '17:00',
+          owner_user_id: uid(),
+          priority: 'urgent',
+          status: 'pending',
+          participant_ids: [uid(2)],
+        }),
+      ])
+    ).rows[0].id
+    expect(
+      (await db.query('select priority,status from public.deadlines where id=$1', [deadline]))
+        .rows[0],
+    ).toEqual({ priority: 'urgent', status: 'pending' })
+    await db.query('select public.mark_overdue_deadlines()')
+    expect(
+      (
+        await db.query<{ status: string }>('select status from public.deadlines where id=$1', [
+          deadline,
+        ])
+      ).rows[0].status,
+    ).toBe('overdue')
+    await actor(4)
+    expect((await db.query('select * from public.events where id=$1', [event])).rows).toHaveLength(
+      0,
+    )
+    expect(
+      (await db.query('select * from public.deadlines where id=$1', [deadline])).rows,
+    ).toHaveLength(0)
+  })
+  it('requires a reason to move a deadline and blocks assistant transitions', async () => {
+    const client = await saveClient()
+    const deadline = await saveCase(await caseData(client))
+    const row = (
+      await db.query<{ id: string }>('select public.save_deadline($1) as id', [
+        JSON.stringify({
+          title: 'Prazo de segurança',
+          description: '',
+          case_id: deadline,
+          start_date: '2026-09-18',
+          due_date: '2026-09-25',
+          due_time: '',
+          owner_user_id: uid(),
+          priority: 'normal',
+          status: 'pending',
+          participant_ids: [],
+        }),
+      ])
+    ).rows[0].id
+    const stampValue = await stamp('deadlines', row)
+    await expect(
+      db.query('select public.save_deadline($1,$2,$3,$4)', [
+        JSON.stringify({
+          title: 'Alterado',
+          description: '',
+          case_id: deadline,
+          start_date: '2026-09-18',
+          due_date: '2026-09-26',
+          due_time: '',
+          owner_user_id: uid(),
+          priority: 'normal',
+          status: 'pending',
+          participant_ids: [],
+        }),
+        row,
+        stampValue,
+        '',
+      ]),
+    ).rejects.toThrow('date_reason_required')
+    await actor(3)
+    await expect(
+      db.query('select public.save_deadline($1,$2,$3,$4)', [
+        JSON.stringify({
+          title: 'Alterado',
+          description: '',
+          case_id: deadline,
+          start_date: '2026-09-18',
+          due_date: '2026-09-26',
+          due_time: '',
+          owner_user_id: uid(),
+          priority: 'normal',
+          status: 'pending',
+          participant_ids: [],
+        }),
+        row,
+        stampValue,
+        'Motivo informado',
+      ]),
+    ).rejects.toThrow('access_denied')
+    await expect(
+      db.query('select public.deadline_action($1,$2,$3,$4,$5)', [
+        row,
+        'complete',
+        stampValue,
+        '',
+        '',
+      ]),
+    ).rejects.toThrow('access_denied')
+    await actor(2)
+    await db.query('select public.deadline_action($1,$2,$3,$4,$5)', [
+      row,
+      'complete',
+      stampValue,
+      '',
+      'Concluído',
+    ])
+    const completed = await stamp('deadlines', row)
+    expect(
+      (
+        await db.query<{ status: string; completed_by: string | null }>(
+          'select status,completed_by from public.deadlines where id=$1',
+          [row],
+        )
+      ).rows[0].status,
+    ).toBe('completed')
+    await db.query('select public.deadline_action($1,$2,$3,$4,$5)', [
+      row,
+      'reopen',
+      completed,
+      'Retomado pelo escritório',
+      '',
+    ])
+    expect(
+      (await db.query<{ status: string }>('select status from public.deadlines where id=$1', [row]))
+        .rows[0].status,
+    ).toBe('pending')
   })
 })
