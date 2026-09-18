@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import {
@@ -222,12 +222,22 @@ export function CalendarPage() {
 }
 
 export function DeadlineList() {
-  const [status, setStatus] = useState('')
+  const [params, setParams] = useSearchParams()
+  const query = params.get('q') ?? ''
+  const status = params.get('status') ?? ''
   const deadlines = useQuery({
-    queryKey: ['deadlines', status],
-    queryFn: () => listDeadlines(status),
+    queryKey: ['deadlines', status, query],
+    queryFn: () => listDeadlines(status, query),
   })
   const now = Date.now()
+  function search(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const values = new FormData(event.currentTarget)
+    setParams({
+      q: String(values.get('q') ?? '').trim(),
+      status: String(values.get('status') ?? ''),
+    })
+  }
   return (
     <>
       <div className="section-heading">
@@ -240,10 +250,19 @@ export function DeadlineList() {
         </Button>
       </div>
       <p className="muted">Acompanhe datas limite, responsáveis, prioridades e conclusões.</p>
-      <div className="record-search">
+      <form key={`${query}-${status}`} onSubmit={search} className="admin-form record-search">
+        <label>
+          Buscar
+          <input
+            name="q"
+            defaultValue={query}
+            maxLength={160}
+            placeholder="Título, descrição ou processo"
+          />
+        </label>
         <label>
           Situação
-          <select value={status} onChange={(event) => setStatus(event.target.value)}>
+          <select name="status" defaultValue={status}>
             <option value="">Todas</option>
             {Object.entries(deadlineStatuses).map(([key, label]) => (
               <option key={key} value={key}>
@@ -252,7 +271,10 @@ export function DeadlineList() {
             ))}
           </select>
         </label>
-      </div>
+        <Button type="submit" variant="outline">
+          Buscar
+        </Button>
+      </form>
       <Feedback message={deadlines.error?.message} />
       <div className="record-grid">
         {deadlines.data?.map((item) => {
@@ -650,7 +672,7 @@ export function DeadlinePage({ creating = false }: { creating?: boolean }) {
         <div className="action-row">
           <Button onClick={() => setAction('complete')}>Concluir prazo</Button>
           <Button variant="dangerOutline" onClick={() => setAction('cancel')}>
-            Cancelar prazo
+            Cancelar e excluir prazo
           </Button>
         </div>
       )}
@@ -666,7 +688,7 @@ export function DeadlinePage({ creating = false }: { creating?: boolean }) {
               ? 'Concluir prazo'
               : action === 'reopen'
                 ? 'Reabrir prazo'
-                : 'Cancelar prazo'
+                : 'Cancelar e excluir prazo'
           }
           busy={busy}
           setBusy={setBusy}
@@ -675,6 +697,12 @@ export function DeadlinePage({ creating = false }: { creating?: boolean }) {
           onConfirm={async (reason, note) => {
             try {
               await deadlineAction(deadline, action, reason, note)
+              if (action === 'cancel') {
+                await cache.invalidateQueries({ queryKey: ['deadlines'] })
+                setAction(null)
+                navigate('/deadlines', { replace: true })
+                return
+              }
               await cache.invalidateQueries({ queryKey: ['deadline', id] })
               await cache.invalidateQueries({ queryKey: ['deadlines'] })
               setAction(null)

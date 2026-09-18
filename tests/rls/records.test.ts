@@ -532,5 +532,39 @@ describe('Clients and cases database boundaries', { concurrent: false }, () => {
       (await db.query<{ status: string }>('select status from public.deadlines where id=$1', [row]))
         .rows[0].status,
     ).toBe('pending')
+    const cancellable = (
+      await db.query<{ id: string }>('select public.save_deadline($1) as id', [
+        JSON.stringify({
+          title: 'Prazo cancelável',
+          description: '',
+          case_id: deadline,
+          start_date: '2026-09-18',
+          due_date: '2026-09-30',
+          due_time: '',
+          owner_user_id: uid(),
+          priority: 'normal',
+          status: 'pending',
+          participant_ids: [uid(2)],
+        }),
+      ])
+    ).rows[0].id
+    const cancellableStamp = await stamp('deadlines', cancellable)
+    await db.query('select public.deadline_action($1,$2,$3,$4,$5)', [
+      cancellable,
+      'cancel',
+      cancellableStamp,
+      'Cadastro duplicado',
+      '',
+    ])
+    expect(
+      (await db.query('select * from public.deadlines where id=$1', [cancellable])).rows,
+    ).toHaveLength(0)
+    expect(
+      (
+        await db.query('select * from public.deadline_participants where deadline_id=$1', [
+          cancellable,
+        ])
+      ).rows,
+    ).toHaveLength(0)
   })
 })

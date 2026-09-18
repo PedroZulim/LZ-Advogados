@@ -10,17 +10,17 @@ O responsável precisa estar ativo no momento do salvamento. Um evento pode ser 
 
 ## Prazos
 
-Todo prazo pertence a um processo. O cadastro guarda título, descrição, data inicial, data limite, horário opcional, responsável, participantes, prioridade e situação. As prioridades são Baixa, Normal, Alta e Urgente. Os estados operacionais são Pendente, Em andamento, Concluído, Cancelado e Vencido.
+Todo prazo pertence a um processo. O cadastro guarda título, descrição, data inicial, data limite, horário opcional, responsável, participantes, prioridade e situação. As prioridades são Baixa, Normal, Alta e Urgente. Os estados operacionais são Pendente, Em andamento, Concluído e Vencido. A tela de prazos permite buscar por título, descrição, processo ou data e filtrar por situação.
 
 Ao abrir a lista, o banco marca como `overdue` os prazos pendentes ou em andamento cujo vencimento já passou, usando o fim do dia em `America/Sao_Paulo` quando não há horário. O prazo nunca é removido por estar vencido.
 
-Todos os perfis ativos podem criar prazos e alterar seus dados descritivos. Apenas administradores e advogados podem mudar a data, concluir, reabrir ou cancelar. Alterar a data exige justificativa entre 3 e 500 caracteres. Reabrir e cancelar também exigem justificativa; concluir aceita uma observação opcional e registra `completed_at` e `completed_by`.
+Todos os perfis ativos podem criar prazos e alterar seus dados descritivos. Apenas administradores e advogados podem mudar a data, concluir, reabrir ou cancelar. Alterar a data exige justificativa entre 3 e 500 caracteres. Reabrir e cancelar também exigem justificativa; concluir aceita uma observação opcional e registra `completed_at` e `completed_by`. Cancelar exclui definitivamente o prazo e seus participantes das tabelas operacionais; a auditoria preserva o registro da ação e os dados anteriores para rastreabilidade.
 
 As alterações passam por RPCs protegidas no banco, com MFA, sessão válida, tenant derivado do perfil, vínculos compostos e controle de concorrência por `updated_at`. A auditoria registra criação, edição, reagendamento, conclusão, reabertura e cancelamento. Participantes inativos não podem ser adicionados a novos registros.
 
 ## Implantação
 
-Aplicar todas as migrations, inclusive `202609170005_calendar_deadlines.sql` e `202609170006_deadline_hardening.sql`, antes de publicar o frontend:
+Aplicar todas as migrations, inclusive `202609170005_calendar_deadlines.sql`, `202609170006_deadline_hardening.sql` e `202609170007_deadline_cancel_delete.sql`, antes de publicar o frontend:
 
 ```powershell
 npx supabase db push --dry-run
