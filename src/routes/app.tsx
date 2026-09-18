@@ -76,7 +76,6 @@ function Workspace({ children }: { children?: ReactNode }) {
         <Link to="/dashboard">Início</Link>
         <Link to="/clients">Clientes</Link>
         <Link to="/cases">Processos</Link>
-        <Link to="/calendar">Agenda</Link>
         <Link to="/deadlines">Prazos</Link>
         <Link to="/account/sessions">Minhas sessões</Link>
         {profile?.role === 'admin' && (
@@ -161,11 +160,7 @@ export function App() {
           />
           <Route
             path="/calendar"
-            element={
-              <Workspace>
-                <CalendarPage />
-              </Workspace>
-            }
+            element={<Navigate to="/dashboard" replace />}
           />
           <Route
             path="/events/new"

@@ -329,9 +329,6 @@ export function DashboardPlanning() {
         <h2>Próximos compromissos e prazos</h2>
         <div className="action-row">
           <Button asChild variant="outline">
-            <Link to="/calendar">Abrir agenda</Link>
-          </Button>
-          <Button asChild variant="outline">
             <Link to="/deadlines">Ver prazos</Link>
           </Button>
         </div>
@@ -384,13 +381,13 @@ export function EventPage({ creating = false }: { creating?: boolean }) {
     return (
       <>
         <Feedback message={current.error?.message || 'Evento não encontrado.'} />
-        <Link to="/calendar">Voltar à agenda</Link>
+        <Link to="/dashboard">Voltar à agenda</Link>
       </>
     )
   const event = current.data ?? undefined
   return (
     <>
-      <Link to="/calendar">← Agenda</Link>
+      <Link to="/dashboard">← Agenda</Link>
       <h1>{creating ? 'Novo evento' : event?.title}</h1>
       <Feedback message={message || refs.error?.message} />
       <EventForm
@@ -405,7 +402,7 @@ export function EventPage({ creating = false }: { creating?: boolean }) {
           await cache.invalidateQueries({ queryKey: ['events'] })
           navigate(`/events/${saved}`, { replace: creating })
         }}
-        onCancel={() => navigate('/calendar')}
+        onCancel={() => navigate('/dashboard')}
       />
       {event && event.status !== 'cancelled' && (
         <>
