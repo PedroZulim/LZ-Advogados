@@ -1166,13 +1166,14 @@ textarea {
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    overflow: hidden;
   }
   .calendar-date-label input {
-    width: 100%;
+    width: calc(100% - 2px);
     min-width: 0;
     max-width: 100%;
     font-size: 16px;
+    -webkit-appearance: none;
+    appearance: none;
   }
   .calendar-view-toggle {
     display: grid;
