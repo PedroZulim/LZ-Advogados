@@ -1,4 +1,4 @@
-import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Link, NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { Scale, LogOut, Calendar, Plus, FolderPlus, UserPlus, Clock } from 'lucide-react'
 import { AuthProvider, useAuth } from '@/features/auth/auth-provider'
 import {
@@ -137,34 +137,110 @@ function Workspace({ children }: { children?: ReactNode }) {
         <p role="status">{error}</p>
       </AuthLayout>
     )
+  const initial = profile?.full_name?.trim()
+    ? profile.full_name.trim().charAt(0).toUpperCase()
+    : 'L'
+  const userFirstName = profile?.full_name?.split(' ')[0] ?? 'Usuário'
+  const roleName = (profile?.role && roleLabels[profile.role]) || 'Equipe'
+
   return (
     <div className="workspace">
-      <header>
-        <span className="brand workspace-brand">
-          <Scale /> LZ Advogados
-        </span>
-        <Button
-          variant="ghost"
-          onClick={() => {
-            void signOut().catch(() => setError('Não foi possível sair. Tente novamente.'))
-          }}
-        >
-          <LogOut size={17} /> Sair
-        </Button>
+      <header className="workspace-header">
+        <div className="header-left">
+          <Link to="/dashboard" className="header-brand">
+            <span className="header-symbol">
+              <Scale size={20} />
+            </span>
+            <div className="header-brand-text">
+              <span className="brand-name">LZ Advogados</span>
+              <small className="brand-tagline">GESTÃO DO ESCRITÓRIO</small>
+            </div>
+          </Link>
+          <nav className="header-nav" aria-label="Navegação principal">
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) =>
+                isActive ? 'header-nav-link active' : 'header-nav-link'
+              }
+            >
+              Início
+            </NavLink>
+            <NavLink
+              to="/clients"
+              className={({ isActive }) =>
+                isActive ? 'header-nav-link active' : 'header-nav-link'
+              }
+            >
+              Clientes
+            </NavLink>
+            <NavLink
+              to="/cases"
+              className={({ isActive }) =>
+                isActive ? 'header-nav-link active' : 'header-nav-link'
+              }
+            >
+              Processos
+            </NavLink>
+            <NavLink
+              to="/deadlines"
+              className={({ isActive }) =>
+                isActive ? 'header-nav-link active' : 'header-nav-link'
+              }
+            >
+              Prazos
+            </NavLink>
+            <NavLink
+              to="/account/sessions"
+              className={({ isActive }) =>
+                isActive ? 'header-nav-link active' : 'header-nav-link'
+              }
+            >
+              Minhas sessões
+            </NavLink>
+            {profile?.role === 'admin' && (
+              <>
+                <NavLink
+                  to="/admin/users"
+                  className={({ isActive }) =>
+                    isActive ? 'header-nav-link active' : 'header-nav-link'
+                  }
+                >
+                  Equipe
+                </NavLink>
+                <NavLink
+                  to="/admin/audit"
+                  className={({ isActive }) =>
+                    isActive ? 'header-nav-link active' : 'header-nav-link'
+                  }
+                >
+                  Auditoria
+                </NavLink>
+              </>
+            )}
+          </nav>
+        </div>
+
+        <div className="header-right">
+          <div className="user-profile-badge">
+            <span className="user-avatar">{initial}</span>
+            <div className="user-info">
+              <span className="user-name">{userFirstName}</span>
+              <span className="user-role">{roleName}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="header-logout-btn"
+            onClick={() => {
+              void signOut().catch(() => setError('Não foi possível sair. Tente novamente.'))
+            }}
+            title="Sair da plataforma"
+          >
+            <LogOut size={16} />
+            <span>Sair</span>
+          </button>
+        </div>
       </header>
-      <nav className="workspace-nav" aria-label="Navegação principal">
-        <Link to="/dashboard">Início</Link>
-        <Link to="/clients">Clientes</Link>
-        <Link to="/cases">Processos</Link>
-        <Link to="/deadlines">Prazos</Link>
-        <Link to="/account/sessions">Minhas sessões</Link>
-        {profile?.role === 'admin' && (
-          <>
-            <Link to="/admin/users">Equipe</Link>
-            <Link to="/admin/audit">Auditoria</Link>
-          </>
-        )}
-      </nav>
       <main>
         {children ?? (
           <>
