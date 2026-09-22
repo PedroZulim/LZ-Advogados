@@ -1,5 +1,5 @@
-import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
-import { Scale, LogOut } from 'lucide-react'
+import { BrowserRouter, Link, NavLink, Navigate, Route, Routes } from 'react-router-dom'
+import { Scale, LogOut, Calendar, Plus, FolderPlus, UserPlus, Clock } from 'lucide-react'
 import { AuthProvider, useAuth } from '@/features/auth/auth-provider'
 import {
   AuthLayout,
@@ -19,6 +19,86 @@ import {
   DashboardPlanning,
   EventPage,
 } from '@/features/planning/planning-pages'
+
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Bom dia'
+  if (hour < 18) return 'Boa tarde'
+  return 'Boa noite'
+}
+
+function getFormattedDate() {
+  const formatter = new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
+  const formatted = formatter.format(new Date())
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1)
+}
+
+const roleLabels: Record<string, string> = {
+  admin: 'Administrador',
+  lawyer: 'Advogado(a)',
+  assistant: 'Assistente',
+}
+
+function DashboardHome({ profile }: { profile: { full_name?: string; role?: string } | null }) {
+  const firstName = profile?.full_name?.split(' ')[0] ?? 'Colega'
+  const roleLabel = (profile?.role && roleLabels[profile.role]) || 'Equipe'
+  const greeting = getGreeting()
+  const todayFormatted = getFormattedDate()
+
+  return (
+    <div className="dashboard-container">
+      <section className="dashboard-hero">
+        <div className="hero-content">
+          <span className="hero-date">
+            <Calendar size={14} />
+            {todayFormatted}
+          </span>
+          <div className="hero-title-row">
+            <h1 className="hero-title">
+              {greeting}, {firstName}
+            </h1>
+            <span className="hero-badge">{roleLabel}</span>
+          </div>
+          <p className="hero-subtitle">
+            Acompanhe os prazos prioritários, audiências e compromissos da sua pauta.
+          </p>
+        </div>
+        <div className="quick-actions">
+          <Button asChild variant="outline">
+            <Link to="/cases/new">
+              <FolderPlus size={15} /> Novo Processo
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/clients/new">
+              <UserPlus size={15} /> Novo Cliente
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/deadlines/new">
+              <Clock size={15} /> Novo Prazo
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link to="/events/new">
+              <Plus size={15} /> Novo Evento
+            </Link>
+          </Button>
+        </div>
+      </section>
+
+      <DashboardPlanning />
+
+      <section className="dashboard-calendar-section">
+        <CalendarPage />
+      </section>
+    </div>
+  )
+}
 
 function Workspace({ children }: { children?: ReactNode }) {
   const { state, profile, signOut, refresh } = useAuth()
@@ -57,42 +137,114 @@ function Workspace({ children }: { children?: ReactNode }) {
         <p role="status">{error}</p>
       </AuthLayout>
     )
+  const initial = profile?.full_name?.trim()
+    ? profile.full_name.trim().charAt(0).toUpperCase()
+    : 'L'
+  const userFirstName = profile?.full_name?.split(' ')[0] ?? 'Usuário'
+  const roleName = (profile?.role && roleLabels[profile.role]) || 'Equipe'
+
   return (
     <div className="workspace">
-      <header>
-        <span className="brand workspace-brand">
-          <Scale /> LZ Advogados
-        </span>
-        <Button
-          variant="ghost"
-          onClick={() => {
-            void signOut().catch(() => setError('Não foi possível sair. Tente novamente.'))
-          }}
-        >
-          <LogOut size={17} /> Sair
-        </Button>
+      <header className="workspace-header">
+        <div className="header-left">
+          <Link to="/dashboard" className="header-brand">
+            <span className="header-symbol">
+              <Scale size={20} />
+            </span>
+            <div className="header-brand-text">
+              <span className="brand-name">LZ Advogados</span>
+              <small className="brand-tagline">GESTÃO DO ESCRITÓRIO</small>
+            </div>
+          </Link>
+          <nav className="header-nav" aria-label="Navegação principal">
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) =>
+                isActive ? 'header-nav-link active' : 'header-nav-link'
+              }
+            >
+              Início
+            </NavLink>
+            <NavLink
+              to="/clients"
+              className={({ isActive }) =>
+                isActive ? 'header-nav-link active' : 'header-nav-link'
+              }
+            >
+              Clientes
+            </NavLink>
+            <NavLink
+              to="/cases"
+              className={({ isActive }) =>
+                isActive ? 'header-nav-link active' : 'header-nav-link'
+              }
+            >
+              Processos
+            </NavLink>
+            <NavLink
+              to="/deadlines"
+              className={({ isActive }) =>
+                isActive ? 'header-nav-link active' : 'header-nav-link'
+              }
+            >
+              Prazos
+            </NavLink>
+            <NavLink
+              to="/account/sessions"
+              className={({ isActive }) =>
+                isActive ? 'header-nav-link active' : 'header-nav-link'
+              }
+            >
+              Minhas sessões
+            </NavLink>
+            {profile?.role === 'admin' && (
+              <>
+                <NavLink
+                  to="/admin/users"
+                  className={({ isActive }) =>
+                    isActive ? 'header-nav-link active' : 'header-nav-link'
+                  }
+                >
+                  Equipe
+                </NavLink>
+                <NavLink
+                  to="/admin/audit"
+                  className={({ isActive }) =>
+                    isActive ? 'header-nav-link active' : 'header-nav-link'
+                  }
+                >
+                  Auditoria
+                </NavLink>
+              </>
+            )}
+          </nav>
+        </div>
+
+        <div className="header-right">
+          <div className="user-profile-badge">
+            <span className="user-avatar">{initial}</span>
+            <div className="user-info">
+              <span className="user-name">{userFirstName}</span>
+              <span className="user-role">{roleName}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="header-logout-btn"
+            onClick={() => {
+              void signOut().catch(() => setError('Não foi possível sair. Tente novamente.'))
+            }}
+            title="Sair da plataforma"
+          >
+            <LogOut size={16} />
+            <span>Sair</span>
+          </button>
+        </div>
       </header>
-      <nav className="workspace-nav" aria-label="Navegação principal">
-        <Link to="/dashboard">Início</Link>
-        <Link to="/clients">Clientes</Link>
-        <Link to="/cases">Processos</Link>
-        <Link to="/deadlines">Prazos</Link>
-        <Link to="/account/sessions">Minhas sessões</Link>
-        {profile?.role === 'admin' && (
-          <>
-            <Link to="/admin/users">Equipe</Link>
-            <Link to="/admin/audit">Auditoria</Link>
-          </>
-        )}
-      </nav>
       <main>
         {children ?? (
           <>
-            <span className="eyebrow">ESPAÇO DO ESCRITÓRIO</span>
-            <h1>Olá, {profile?.full_name.split(' ')[0]}.</h1>
-            <p className="muted">Seu acesso foi confirmado.</p>
-            <CalendarPage />
-            <DashboardPlanning />
+            <DashboardHome profile={profile} />
             <p role="status">{error}</p>
           </>
         )}
