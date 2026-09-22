@@ -20,7 +20,7 @@ As alterações passam por RPCs protegidas no banco, com MFA, sessão válida, t
 
 ## Implantação
 
-Aplicar todas as migrations, inclusive `202609170005_calendar_deadlines.sql`, `202609170006_deadline_hardening.sql` e `202609170007_deadline_cancel_delete.sql`, antes de publicar o frontend:
+Aplicar todas as migrations, inclusive `202609170005_calendar_deadlines.sql`, `202609170006_deadline_hardening.sql`, `202609170007_deadline_cancel_delete.sql` e `202609220001_event_lifecycle_hardening.sql`, antes de publicar o frontend:
 
 ```powershell
 npx supabase db push --dry-run

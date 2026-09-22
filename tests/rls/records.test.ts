@@ -436,6 +436,83 @@ describe('Clients and cases database boundaries', { concurrent: false }, () => {
       (await db.query('select * from public.deadlines where id=$1', [deadline])).rows,
     ).toHaveLength(0)
   })
+  it('keeps event lifecycle changes behind the cancellation authorization', async () => {
+    const client = await saveClient()
+    const caseId = await saveCase(await caseData(client))
+    const start = new Date(Date.now() + 86400000).toISOString()
+    const eventData = {
+      title: 'Evento protegido',
+      event_type: 'hearing',
+      owner_user_id: uid(),
+      client_id: client,
+      case_id: caseId,
+      starts_at: start,
+      ends_at: null,
+      all_day: false,
+      recurrence_type: 'none',
+      recurrence_until: null,
+      participant_ids: [],
+    }
+    const event = (
+      await db.query<{ id: string }>('select public.save_event($1) as id', [
+        JSON.stringify(eventData),
+      ])
+    ).rows[0].id
+    const eventStamp = await stamp('events', event)
+
+    await actor(3)
+    await db.query('select public.save_event($1,$2,$3,$4)', [
+      JSON.stringify({ ...eventData, status: 'cancelled' }),
+      event,
+      eventStamp,
+      '',
+    ])
+    const unchangedStamp = await stamp('events', event)
+    expect(
+      (await db.query<{ status: string }>('select status from public.events where id=$1', [event]))
+        .rows[0].status,
+    ).toBe('scheduled')
+
+    await expect(
+      db.query('select public.save_event($1,$2,$3,$4)', [
+        JSON.stringify({ ...eventData, owner_user_id: uid(3) }),
+        event,
+        unchangedStamp,
+        '',
+      ]),
+    ).rejects.toThrow('access_denied')
+
+    expect(
+      (await db.query('select status,owner_user_id from public.events where id=$1', [event]))
+        .rows[0],
+    ).toEqual({
+      status: 'scheduled',
+      owner_user_id: uid(),
+    })
+
+    await actor(1)
+    await db.query('select public.cancel_event($1,$2,$3)', [
+      event,
+      unchangedStamp,
+      'Audiência cancelada pelo escritório',
+    ])
+    const cancelledStamp = await stamp('events', event)
+    await actor(3)
+    await db.query('select public.save_event($1,$2,$3,$4)', [
+      JSON.stringify({ ...eventData, title: 'Edição após cancelamento', status: 'scheduled' }),
+      event,
+      cancelledStamp,
+      '',
+    ])
+    expect(
+      (
+        await db.query<{ status: string; cancelled_at: string | null }>(
+          'select status,cancelled_at from public.events where id=$1',
+          [event],
+        )
+      ).rows[0].status,
+    ).toBe('cancelled')
+  })
   it('requires a reason to move a deadline and blocks assistant transitions', async () => {
     const client = await saveClient()
     const deadline = await saveCase(await caseData(client))
