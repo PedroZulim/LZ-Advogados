@@ -981,6 +981,7 @@ textarea {
   justify-content: space-between;
   gap: 16px;
   margin: 24px 0;
+  min-width: 0;
 }
 .calendar-toolbar label {
   margin: 0;
@@ -988,8 +989,11 @@ textarea {
 }
 .calendar-date-label {
   min-width: 0;
+  max-width: 100%;
 }
 .calendar-date-label input {
+  box-sizing: border-box;
+  display: block;
   min-width: 0;
   max-width: 100%;
 }
@@ -1154,13 +1158,21 @@ textarea {
   .calendar-toolbar {
     align-items: stretch;
     flex-direction: column;
+    width: 100%;
+    max-width: 100%;
   }
   .calendar-date-label {
+    flex: 0 1 auto;
     width: 100%;
     min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
   }
   .calendar-date-label input {
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    font-size: 16px;
   }
   .calendar-view-toggle {
     display: grid;
