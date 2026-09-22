@@ -129,7 +129,7 @@ export function CalendarPage() {
       <p className="muted">Compromissos, audiências, reuniões e tarefas do escritório.</p>
       <div className="calendar-toolbar">
         <label className="calendar-date-label">
-          <span>Data de referência</span>
+          <span>Data</span>
           <input
             type="date"
             value={selected}
