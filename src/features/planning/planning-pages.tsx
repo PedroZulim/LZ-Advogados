@@ -128,28 +128,41 @@ export function CalendarPage() {
       </div>
       <p className="muted">Compromissos, audiências, reuniões e tarefas do escritório.</p>
       <div className="calendar-toolbar">
-        <label>
-          Data
+        <label className="calendar-date-label">
+          <span>Data de referência</span>
           <input
             type="date"
             value={selected}
             onChange={(event) => setSelected(event.target.value)}
           />
         </label>
-        <div className="action-row">
+        <div className="calendar-view-toggle">
           <Button
-            variant={view === 'month' ? 'default' : 'outline'}
+            type="button"
+            variant={view === 'month' ? 'default' : 'ghost'}
             onClick={() => setView('month')}
           >
             Mês
           </Button>
-          <Button variant={view === 'week' ? 'default' : 'outline'} onClick={() => setView('week')}>
+          <Button
+            type="button"
+            variant={view === 'week' ? 'default' : 'ghost'}
+            onClick={() => setView('week')}
+          >
             Semana
           </Button>
-          <Button variant={view === 'day' ? 'default' : 'outline'} onClick={() => setView('day')}>
+          <Button
+            type="button"
+            variant={view === 'day' ? 'default' : 'ghost'}
+            onClick={() => setView('day')}
+          >
             Dia
           </Button>
-          <Button variant="outline" onClick={() => setView('list')}>
+          <Button
+            type="button"
+            variant={view === 'list' ? 'default' : 'ghost'}
+            onClick={() => setView('list')}
+          >
             Lista
           </Button>
         </div>

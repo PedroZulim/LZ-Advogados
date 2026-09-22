@@ -1,5 +1,29 @@
-import { BrowserRouter, Link, NavLink, Navigate, Route, Routes } from 'react-router-dom'
-import { Scale, LogOut, Calendar, Plus, FolderPlus, UserPlus, Clock } from 'lucide-react'
+import {
+  BrowserRouter,
+  Link,
+  NavLink,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from 'react-router-dom'
+import {
+  Scale,
+  LogOut,
+  Calendar,
+  Plus,
+  FolderPlus,
+  UserPlus,
+  Clock,
+  Menu,
+  X,
+  Home,
+  Users,
+  Briefcase,
+  Shield,
+  UserCheck,
+  History,
+} from 'lucide-react'
 import { AuthProvider, useAuth } from '@/features/auth/auth-provider'
 import {
   AuthLayout,
@@ -9,7 +33,7 @@ import {
   RecoveryPage,
 } from '@/features/auth/auth-pages'
 import { Button } from '@/components/ui/button'
-import { useState, type ReactNode } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { UsersPage, SessionsPage, AuditPage } from '@/features/admin/admin-pages'
 import { RecordList, RecordPage } from '@/features/records/record-pages'
 import {
@@ -103,6 +127,28 @@ function DashboardHome({ profile }: { profile: { full_name?: string; role?: stri
 function Workspace({ children }: { children?: ReactNode }) {
   const { state, profile, signOut, refresh } = useAuth()
   const [error, setError] = useState('')
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const location = useLocation()
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsMobileMenuOpen(false)
+    }
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isMobileMenuOpen])
+
   if (state === 'loading')
     return (
       <main className="center-state" role="status">
@@ -156,7 +202,7 @@ function Workspace({ children }: { children?: ReactNode }) {
               <small className="brand-tagline">GESTÃO DO ESCRITÓRIO</small>
             </div>
           </Link>
-          <nav className="header-nav" aria-label="Navegação principal">
+          <nav className="header-nav desktop-only" aria-label="Navegação principal">
             <NavLink
               to="/dashboard"
               className={({ isActive }) =>
@@ -220,7 +266,7 @@ function Workspace({ children }: { children?: ReactNode }) {
           </nav>
         </div>
 
-        <div className="header-right">
+        <div className="header-right desktop-only">
           <div className="user-profile-badge">
             <span className="user-avatar">{initial}</span>
             <div className="user-info">
@@ -240,7 +286,132 @@ function Workspace({ children }: { children?: ReactNode }) {
             <span>Sair</span>
           </button>
         </div>
+
+        <button
+          type="button"
+          className="mobile-menu-toggle"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label={isMobileMenuOpen ? 'Fechar menu' : 'Abrir menu de opções'}
+          aria-expanded={isMobileMenuOpen}
+        >
+          {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
       </header>
+
+      {isMobileMenuOpen && (
+        <div
+          className="mobile-menu-overlay"
+          role="presentation"
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          <div
+            className="mobile-menu-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu principal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mobile-menu-user">
+              <span className="user-avatar large">{initial}</span>
+              <div className="user-info">
+                <span className="user-name">{profile?.full_name ?? 'Usuário'}</span>
+                <span className="user-role">{roleName}</span>
+              </div>
+            </div>
+
+            <nav className="mobile-nav" aria-label="Menu móvel">
+              <NavLink
+                to="/dashboard"
+                className={({ isActive }) =>
+                  isActive ? 'mobile-nav-link active' : 'mobile-nav-link'
+                }
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Home size={18} />
+                <span>Início</span>
+              </NavLink>
+              <NavLink
+                to="/clients"
+                className={({ isActive }) =>
+                  isActive ? 'mobile-nav-link active' : 'mobile-nav-link'
+                }
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Users size={18} />
+                <span>Clientes</span>
+              </NavLink>
+              <NavLink
+                to="/cases"
+                className={({ isActive }) =>
+                  isActive ? 'mobile-nav-link active' : 'mobile-nav-link'
+                }
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Briefcase size={18} />
+                <span>Processos</span>
+              </NavLink>
+              <NavLink
+                to="/deadlines"
+                className={({ isActive }) =>
+                  isActive ? 'mobile-nav-link active' : 'mobile-nav-link'
+                }
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Clock size={18} />
+                <span>Prazos</span>
+              </NavLink>
+              <NavLink
+                to="/account/sessions"
+                className={({ isActive }) =>
+                  isActive ? 'mobile-nav-link active' : 'mobile-nav-link'
+                }
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Shield size={18} />
+                <span>Minhas sessões</span>
+              </NavLink>
+              {profile?.role === 'admin' && (
+                <>
+                  <NavLink
+                    to="/admin/users"
+                    className={({ isActive }) =>
+                      isActive ? 'mobile-nav-link active' : 'mobile-nav-link'
+                    }
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <UserCheck size={18} />
+                    <span>Equipe</span>
+                  </NavLink>
+                  <NavLink
+                    to="/admin/audit"
+                    className={({ isActive }) =>
+                      isActive ? 'mobile-nav-link active' : 'mobile-nav-link'
+                    }
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <History size={18} />
+                    <span>Auditoria</span>
+                  </NavLink>
+                </>
+              )}
+            </nav>
+
+            <div className="mobile-menu-footer">
+              <button
+                type="button"
+                className="mobile-logout-btn"
+                onClick={() => {
+                  setIsMobileMenuOpen(false)
+                  void signOut().catch(() => setError('Não foi possível sair. Tente novamente.'))
+                }}
+              >
+                <LogOut size={17} />
+                <span>Sair da conta</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <main>
         {children ?? (
           <>
