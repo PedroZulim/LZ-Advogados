@@ -986,6 +986,13 @@ textarea {
   margin: 0;
   min-width: 180px;
 }
+.calendar-date-label {
+  min-width: 0;
+}
+.calendar-date-label input {
+  min-width: 0;
+  max-width: 100%;
+}
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -1147,6 +1154,22 @@ textarea {
   .calendar-toolbar {
     align-items: stretch;
     flex-direction: column;
+  }
+  .calendar-date-label {
+    width: 100%;
+    min-width: 0;
+  }
+  .calendar-date-label input {
+    width: 100%;
+  }
+  .calendar-view-toggle {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+  }
+  .calendar-view-toggle .button {
+    min-width: 0;
+    padding-inline: 8px;
   }
   .calendar-grid {
     grid-template-columns: 1fr;
