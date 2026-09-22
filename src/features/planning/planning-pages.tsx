@@ -320,27 +320,36 @@ export function DashboardPlanning() {
     queryKey: ['events', 'dashboard'],
     queryFn: () => listEvents(new Date().toISOString(), iso(new Date(Date.now() + 30 * 86400000))),
   })
-  const upcoming = (deadlines.data ?? [])
-    .filter((item) => !['completed', 'cancelled'].includes(item.status))
-    .slice(0, 5)
+  const openDeadlines = (deadlines.data ?? []).filter(
+    (item) => !['completed', 'cancelled'].includes(item.status),
+  )
+  const urgent = openDeadlines.filter((item) => item.priority === 'urgent')
+  const upcoming = openDeadlines.slice(0, 5)
   return (
     <section className="planning-dashboard">
       <div className="section-heading">
-        <h2>Próximos compromissos e prazos</h2>
+        <div>
+          <span className="eyebrow">PAUTA E PRIORIDADES</span>
+          <h2>Próximos compromissos e prazos</h2>
+        </div>
         <div className="action-row">
           <Button asChild variant="outline">
-            <Link to="/deadlines">Ver prazos</Link>
+            <Link to="/deadlines">Ver todos os prazos</Link>
           </Button>
         </div>
       </div>
       <div className="planning-summary">
         <div>
-          <strong>{events.data?.length ?? 0}</strong>
-          <span>eventos nos próximos 30 dias</span>
+          <strong className={urgent.length > 0 ? 'priority-urgent' : ''}>{urgent.length}</strong>
+          <span>prazos urgentes</span>
         </div>
         <div>
-          <strong>{upcoming.length}</strong>
-          <span>prazos em aberto próximos</span>
+          <strong>{openDeadlines.length}</strong>
+          <span>prazos em aberto</span>
+        </div>
+        <div>
+          <strong>{events.data?.length ?? 0}</strong>
+          <span>eventos nos próximos 30 dias</span>
         </div>
       </div>
       <div className="planning-list">

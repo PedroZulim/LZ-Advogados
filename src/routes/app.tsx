@@ -1,5 +1,5 @@
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
-import { Scale, LogOut } from 'lucide-react'
+import { Scale, LogOut, Calendar, Plus, FolderPlus, UserPlus, Clock } from 'lucide-react'
 import { AuthProvider, useAuth } from '@/features/auth/auth-provider'
 import {
   AuthLayout,
@@ -19,6 +19,86 @@ import {
   DashboardPlanning,
   EventPage,
 } from '@/features/planning/planning-pages'
+
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Bom dia'
+  if (hour < 18) return 'Boa tarde'
+  return 'Boa noite'
+}
+
+function getFormattedDate() {
+  const formatter = new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
+  const formatted = formatter.format(new Date())
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1)
+}
+
+const roleLabels: Record<string, string> = {
+  admin: 'Administrador',
+  lawyer: 'Advogado(a)',
+  assistant: 'Assistente',
+}
+
+function DashboardHome({ profile }: { profile: { full_name?: string; role?: string } | null }) {
+  const firstName = profile?.full_name?.split(' ')[0] ?? 'Colega'
+  const roleLabel = (profile?.role && roleLabels[profile.role]) || 'Equipe'
+  const greeting = getGreeting()
+  const todayFormatted = getFormattedDate()
+
+  return (
+    <div className="dashboard-container">
+      <section className="dashboard-hero">
+        <div className="hero-content">
+          <span className="hero-date">
+            <Calendar size={14} />
+            {todayFormatted}
+          </span>
+          <div className="hero-title-row">
+            <h1 className="hero-title">
+              {greeting}, {firstName}
+            </h1>
+            <span className="hero-badge">{roleLabel}</span>
+          </div>
+          <p className="hero-subtitle">
+            Acompanhe os prazos prioritários, audiências e compromissos da sua pauta.
+          </p>
+        </div>
+        <div className="quick-actions">
+          <Button asChild variant="outline">
+            <Link to="/cases/new">
+              <FolderPlus size={15} /> Novo Processo
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/clients/new">
+              <UserPlus size={15} /> Novo Cliente
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/deadlines/new">
+              <Clock size={15} /> Novo Prazo
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link to="/events/new">
+              <Plus size={15} /> Novo Evento
+            </Link>
+          </Button>
+        </div>
+      </section>
+
+      <DashboardPlanning />
+
+      <section className="dashboard-calendar-section">
+        <CalendarPage />
+      </section>
+    </div>
+  )
+}
 
 function Workspace({ children }: { children?: ReactNode }) {
   const { state, profile, signOut, refresh } = useAuth()
@@ -88,11 +168,7 @@ function Workspace({ children }: { children?: ReactNode }) {
       <main>
         {children ?? (
           <>
-            <span className="eyebrow">ESPAÇO DO ESCRITÓRIO</span>
-            <h1>Olá, {profile?.full_name.split(' ')[0]}.</h1>
-            <p className="muted">Seu acesso foi confirmado.</p>
-            <CalendarPage />
-            <DashboardPlanning />
+            <DashboardHome profile={profile} />
             <p role="status">{error}</p>
           </>
         )}
